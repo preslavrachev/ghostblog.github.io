@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+
+				<title>KotlinConf 2018 Recap</title>
+
+	<meta name="HandheldFriendly" content="True" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+	<link rel="stylesheet" type="text/css" href="/assets/css/style.css?v=7d79bd6108" />
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+
+	<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="canonical" href="https://preslav.me/2018/11/01/kotlinconf-2018-recap/" />
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+    <link rel="amphtml" href="https://preslav.me/2018/11/01/kotlinconf-2018-recap/amp/" />
+    
+    <meta property="og:site_name" content="Preslav Rachev" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="KotlinConf 2018 Recap" />
+    <meta property="og:description" content="KotlinConf 2018 took place in beautiful Amsterdam at the beginning of October, and this year, I had the chance to attend. Though only the second edition, KotlinConf has already become something of an institution within the developer community. Events like these help you meet the people whose work you admire," />
+    <meta property="og:url" content="https://preslav.me/2018/11/01/kotlinconf-2018-recap/" />
+    <meta property="og:image" content="https://preslav.me/content/images/2018/12/meta-kotlinconf.png" />
+    <meta property="article:published_time" content="2018-11-01T09:11:00.000Z" />
+    <meta property="article:modified_time" content="2018-12-08T09:21:11.000Z" />
+    <meta property="article:tag" content="Kotlin" />
+    <meta property="article:tag" content="Conference" />
+    <meta property="article:tag" content="Amsterdam" />
+    
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="KotlinConf 2018 Recap" />
+    <meta name="twitter:description" content="KotlinConf 2018 took place in beautiful Amsterdam at the beginning of October, and this year, I had the chance to attend. Though only the second edition, KotlinConf has already become something of an institution within the developer community. Events like these help you meet the people whose work you admire," />
+    <meta name="twitter:url" content="https://preslav.me/2018/11/01/kotlinconf-2018-recap/" />
+    <meta name="twitter:image" content="https://preslav.me/content/images/2018/12/meta-kotlinconf.png" />
+    <meta name="twitter:label1" content="Written by" />
+    <meta name="twitter:data1" content="Preslav Rachev" />
+    <meta name="twitter:label2" content="Filed under" />
+    <meta name="twitter:data2" content="Kotlin, Conference, Amsterdam" />
+    <meta name="twitter:site" content="@preslavrachev" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="800" />
+    
+    <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "publisher": {
+        "@type": "Organization",
+        "name": "Preslav Rachev",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "https://preslav.me/favicon.ico",
+            "width": 60,
+            "height": 60
+        }
+    },
+    "author": {
+        "@type": "Person",
+        "name": "Preslav Rachev",
+        "image": {
+            "@type": "ImageObject",
+            "url": "https://preslav.me/content/images/2018/12/3Uv6SjbG_400x400.jpg",
+            "width": 400,
+            "height": 400
+        },
+        "url": "https://preslav.me/author/preslav/",
+        "sameAs": []
+    },
+    "headline": "KotlinConf 2018 Recap",
+    "url": "https://preslav.me/2018/11/01/kotlinconf-2018-recap/",
+    "datePublished": "2018-11-01T09:11:00.000Z",
+    "dateModified": "2018-12-08T09:21:11.000Z",
+    "image": {
+        "@type": "ImageObject",
+        "url": "https://preslav.me/content/images/2018/12/meta-kotlinconf.png",
+        "width": 1280,
+        "height": 800
+    },
+    "keywords": "Kotlin, Conference, Amsterdam",
+    "description": "KotlinConf 2018 took place in beautiful Amsterdam at the beginning of October, and this year, I had the chance to attend. Though only the second edition, KotlinConf has already become something of an institution within the developer community. Events like these help you meet the people whose work you admire,",
+    "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://preslav.me/"
+    }
+}
+    </script>
+
+    <script src="/public/ghost-sdk.min.js?v=7d79bd6108"></script>
+<script>
+ghost.init({
+	clientId: "ghost-frontend",
+	clientSecret: "2a78cd55fca9"
+});
+</script>
+    <meta name="generator" content="Ghost 2.6" />
+    <link rel="alternate" type="application/rss+xml" title="Preslav Rachev" href="https://preslav.me/rss/" />
+    <link href="https://micro.blog/preslavrachev" rel="me" />
+<link href="https://github.com/preslavrachev" rel="me" />
+
+<link rel="micropub" href="https://untitled-ijfrpfomttsw.runkit.sh/micropub">
+<link rel="token_endpoint" href="https://tokens.indieauth.com/token">
+<link rel="authorization_endpoint" href="https://indieauth.com/auth">
+
+<style>
+    .post-full-content pre {
+    	margin: 1.5em 0 3em !important;
+	}
+    
+    .blog-description: {
+        background-color: #37353dad;
+    	padding: 1rem;
+    }
+    
+    
+     /* Atilla-related
+    .inner {
+    	max-width: 36em !important;
+    }
+    
+    .blog-cover {
+    	opacity: 0.7;
+        animation: none;
+    }
+    
+    .post-comments: {
+    	display:auto !important;
+    }
+    */
+    
+    .blog-cover {
+    	opacity: 0.7;
+        animation: none;
+    }
+    
+    #post-header.has-cover {
+    	padding-top: 4em;
+    }
+    
+    #blog-header.has-cover {
+    	padding: 2em 0 2em;
+    }  
+</style>
+</head>
+
+<body class="post-template tag-kotlin tag-conference tag-amsterdam">
+
+	<nav id="menu">
+	<a class="close-button">Close</a>
+	<div class="nav-wrapper">
+		<p class="nav-label">Menu</p>
+		<ul>
+			<li class="nav-home" role="presentation"><a href="https://preslav.me/">Home</a></li>
+			<li class="nav-about" role="presentation"><a href="https://preslav.me/about-me/">About</a></li>
+			<li class="nav-munich-tech-community" role="presentation"><a href="https://preslav.me/aggregated-munich-tech-community/">Munich Tech Community</a></li>
+			<li class="nav-devnotes" role="presentation"><a href="https://devnotes.space">DevNotes</a></li>
+			<li class="nav-blogroll" role="presentation"><a href="https://preslav.me/blogroll/">Blogroll</a></li>
+			<li class="nav-contact" role="presentation"><a href="https://preslav.me/contact/">Contact</a></li>
+			<li class="nav-twitter"><a href="https://twitter.com/preslavrachev" title="@preslavrachev"><i class="ic ic-twitter"></i> Twitter</a></li>
+			<li class="nav-rss"><a href="https://preslav.me/rss/"><i class="ic ic-rss"></i> Subscribe</a></li>
+		</ul>
+	</div>
+</nav>
+
+
+	<section id="wrapper">
+		<a class="hidden-close"></a>
+		
+
+<div class="progress-container">
+	<span class="progress-bar"></span>
+</div>
+
+<header id="post-header" class="has-cover" >
+	<div class="inner">
+		<nav id="navigation">
+			<span id="home-button" class="nav-button">
+				<a class="home-button" href="https://preslav.me" title="Home"><i class="ic ic-arrow-left"></i> Home</a>
+			</span>
+			<span id="menu-button" class="nav-button">
+				<a class="menu-button"><i class="ic ic-menu"></i> Menu</a>
+			</span>
+		</nav>
+			<h1 class="post-title">KotlinConf 2018 Recap</h1>
+			<span class="post-meta"><a href="/about-me">Preslav Rachev</a> on <a href="/tag/kotlin/">Kotlin</a>, <a href="/tag/conference/">Conference</a>, <a href="/tag/amsterdam/">Amsterdam</a> | <time datetime="2018-11-01">01 Nov 2018</time></span>
+				
+		<div class="post-cover cover" style="background-image: url('/content/images/2018/12/meta-kotlinconf.png');"></div>
+	</div>
+</header>
+
+<main class="content" role="main">
+	<article class="post tag-kotlin tag-conference tag-amsterdam">
+		<div class="inner">
+
+			<section class="post-content">
+				<p><a href="https://kotlinconf.com/">KotlinConf 2018</a> took place in beautiful Amsterdam at the beginning of October, and this year, I had the chance to attend. Though only the second edition, KotlinConf has already become something of an institution within the developer community. Events like these help you meet the people whose work you admire, but would otherwise not be able to meet in person.</p>
+<p>This is my short recollection of the two wonderful days in Amsterdam:</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/TczXQ_9qoA4" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<h2 id="theannouncements">The Announcements</h2>
+<blockquote>
+<p>We ❤️ Kotlin and Kotlin ❤️s us too!</p>
+</blockquote>
+<h3 id="kotlin13">Kotlin 1.3</h3>
+<p>The long-awaited <a href="https://blog.jetbrains.com/kotlin/2018/10/kotlin-1-3/">Kotlin 1.3</a> release was announced, which would supposedly remove the “experimental” flag off of coroutines and make it a first-class language feature. It will also help promote the concept of multi-platform programming forward. Using Kotlin to develop backend systems is not a new idea, but the 1.3 release is going to firmly set foot in many domains, beyond Android.</p>
+<p>Best of all, we can finally use one IDE to develop on Kotlin for all platforms. We no longer need to jump back and forth over to CLion or AppCode, unless we really want to. Otherwise, IntelliJ (incl. the free Community Edition) should be more than sufficient. For finalizing the iOS builds, we ultimately still need XCode, but that’s not something under JetBrains’ control.</p>
+<h2 id="thetopics">The Topics</h2>
+<blockquote>
+<p>There is a DSL for that…</p>
+</blockquote>
+<p>Of course, topics revolved mainly around the major announcements, including, but not limited to, the development of DSLs (domain-specific languages) for solving just about any problem, multi-platform development (for the JVM, JavaScript, or natively on iOS, macOS, Linux, etc), server-side, data science and machine learning, and of course, many, many sessions targeting Android.</p>
+<h3 id="kotlinontheserver">Kotlin on the Server</h3>
+<p>I was happy to see the <a href="https://cloud.google.com/kotlin/">involvement of Google into Kotlin</a>, beyond Android. In fact, there was quite a Google presence from the Cloud Platform team. Other companies, well-known using Kotlin on the server-side, such as German online-bank <a href="https://n26.com/">N26</a>, were there to inspire the community.</p>
+<p>If you are interested into trying out Kotlin on the server, I recommend these three talks straight out of KotlinConf:</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/8xfQA10Cd7g" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<p>for a quick overview, before checking out <a href="https://www.http4k.org/">http4k</a></p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/vdxBNh1qx1Q" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<p>and, of course, <a href="https://ktor.io/">Ktor</a></p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/V4PS3IjIzlw" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<h3 id="kotlinfordatascience">Kotlin for Data Science</h3>
+<p>Ever since I tried Kotlin for the first time, I was convinced that it has the potential to outpace Scala, and stand shoulder to shoulder with Python and R, as the dominant programming language trio of data science. Although we are still far from this moment of ultimate bliss, the efforts of folks like <a href="https://twitter.com/holgerbrandl">Holger Brand</a> l and <a href="https://twitter.com/thomasnield9727">Thomas Nield</a> (and to some limited extend, my humble self) can only help reassure that there is a serious potential, which is about to unroll in the coming months.</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/yjVW6uCmVBA" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/-zTqtEcnM7A" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<h3 id="kotlineverywhereevenonios">Kotlin … Everywhere (Even on iOS)</h3>
+<p>Yes, the big keyword of KotlinConf 2018 was <em>/multi-platform/</em>. Although not a silver bullet, and definitely not a write-once-deploy-everywhere proposition, multi-platform has the potential to help developers organize big projects around modules that can be shared across platforms. Kotlin/Native makes this possible. Unlike Flutter or React Native, however, the idea is not to overtake the UI development of each platform, but rather, deliver the native look-and-experience, by sharing the shared business logic across.</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/UyTBXEZ983g" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/Dul17VSiejo" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<h3 id="thevenue">The Venue</h3>
+<p>The venue (<a href="https://en.wikipedia.org/wiki/Beurs_van_Berlage">Beurs van Berlage</a>) is a former Dutch stock exchange, now turned into a convention center. It is located in the perfect city center, literally, 5-minute walking distance from the central station. I was extremely thankful for that, since I was commuting with the morning train from the nearby city of Utrecht.</p>
+<p>{% include figure image_path=&quot;/assets/img/2018/november/TJ1QL%KsR8evl5H0LZjn4Q_thumb_14ca.jpg&quot; alt=&quot;A beautiful morning in Amsterdam with Beurs van Berlage in the background&quot; caption=&quot;A beautiful morning in Amsterdam with Beurs van Berlage in the background&quot; %}</p>
+<p>The service and catering at the location were very good. Food, refreshments, and coffee were present at all times, so one could never enter a session hungry or or in lack of caffeine. The organizers and stewards were always present, always helping, politely answering questions, or helping people get to their sessions on time.</p>
+<p>There were however, a couple of minus points. The event felt a bit overbooked for the venue, and one could see this right from the start. The keynote hall could not fit everyone, so a separate hall was designated, where the keynote was streamed. Also, during follow-up sessions, some of the smaller halls filled up quickly, and late newcomers would stay around the edge of the room, or get ushered to a separate, silent room with a few large screens streaming each of the four parallel sessions live. Some people liked the silent rooms, but I didn’t. I go to a conference mainly for the live interaction with others, not for passive consumption of the presentations. I wish there were a little more room and space for enjoying your chat, without being ushered to move aside ever 10 seconds.</p>
+<h3 id="overall">Overall</h3>
+<p>Of course, all of these things are normal for such a big conference, and compared to the overall excitement to be there and meet the Kotlin community, they felt like a minor nuisance. I totally enjoyed my stay in Amsterdam and Utrecht, and am already looking forward to booking my tickets for next year’s KotlinConf.</p>
+<hr>
+<p><strong>KotlinConf 2018 through the eyes of others</strong></p>
+<p><a href="https://zsmb.co/kotlinconf-18">KotlinConf 18 | Zsmb</a><br>
+<a href="https://developer.epages.com/blog/events/krazy-kotlinconf-2018-in-amsterdam/">Krazy KotlinConf 2018 in Amsterdam</a></p>
+
+			</section>
+
+			<section class="post-info">
+
+				<div class="post-share">
+					<a class="twitter" href="https://twitter.com/share?text=KotlinConf 2018 Recap&url=https://preslav.me/2018/11/01/kotlinconf-2018-recap/" onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+						<i class="ic ic-twitter"></i><span class="hidden">Twitter</span>
+					</a>
+					<a class="facebook" href="https://www.facebook.com/sharer/sharer.php?u=https://preslav.me/2018/11/01/kotlinconf-2018-recap/" onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+						<i class="ic ic-facebook"></i><span class="hidden">Facebook</span>
+					</a>
+					<a class="googleplus" href="https://plus.google.com/share?url=https://preslav.me/2018/11/01/kotlinconf-2018-recap/" onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+						<i class="ic ic-googleplus"></i><span class="hidden">Google+</span>
+					</a>
+					<div class="clear"></div>
+				</div>
+
+				<aside class="post-tags">
+					<a href="/tag/kotlin/">Kotlin</a> <a href="/tag/conference/">Conference</a> <a href="/tag/amsterdam/">Amsterdam</a>
+				</aside>
+
+				<div class="clear"></div>
+						<aside class="post-author">
+							<figure class="post-author-avatar avatar">
+									<img src="/content/images/2018/12/3Uv6SjbG_400x400.jpg" alt="Preslav Rachev" />
+							</figure>
+							<div class="post-author-bio">
+								<h4 class="post-author-name"><a href="/author/preslav/">Preslav Rachev</a></h4>
+									<p class="post-author-about">I am a software engineer at KI labs GmbH and advocate for strong developer culture. In my free time, I enjoy running in the woods, reading a great book, or working on my next piece of writing/music.</p>
+								<style>
+									.bmc-button img {
+										width: 27px !important;
+										margin-bottom: 1px !important;
+										box-shadow: none !important;
+										border: none !important;
+										vertical-align: middle !important;
+									}
+								
+									.bmc-button {
+										line-height: 36px !important;
+										height: 37px !important;
+										text-decoration: none !important;
+										display: inline-flex !important;
+										color: #ffffff !important;
+										background-color: #FF813F !important;
+										border-radius: 3px !important;
+										border: 1px solid transparent !important;
+										padding: 1px 9px !important;
+										font-size: 22px !important;
+										letter-spacing: 0.6px !important;
+										box-shadow: 0px 1px 2px rgba(190, 190, 190, 0.5) !important;
+										-webkit-box-shadow: 0px 1px 2px 2px rgba(190, 190, 190, 0.5) !important;
+										margin: 0 auto !important;
+										font-family: 'Cookie', cursive !important;
+										-webkit-box-sizing: border-box !important;
+										box-sizing: border-box !important;
+										-o-transition: 0.3s all linear !important;
+										-webkit-transition: 0.3s all linear !important;
+										-moz-transition: 0.3s all linear !important;
+										-ms-transition: 0.3s all linear !important;
+										transition: 0.3s all linear !important;
+									}
+								
+									.bmc-button:hover,
+									.bmc-button:active,
+									.bmc-button:focus {
+										-webkit-box-shadow: 0px 1px 2px 2px rgba(190, 190, 190, 0.5) !important;
+										text-decoration: none !important;
+										box-shadow: 0px 1px 2px 2px rgba(190, 190, 190, 0.5) !important;
+										opacity: 0.85 !important;
+										color: #ffffff !important;
+									}
+								</style>
+								<link href="https://fonts.googleapis.com/css?family=Cookie" rel="stylesheet"><a class="bmc-button" target="_blank"
+									href="https://www.buymeacoffee.com/0B7zhlQ2I"><img src="https://www.buymeacoffee.com/assets/img/BMC-btn-logo.svg"
+										alt="Buy me a coffee"><span style="margin-left:5px; margin-top: 0px; margin-right: 0px; font-size: 1em">Buy me a coffee</span></a>
+								<br/>
+									<span class="post-author-location"><i class="ic ic-location"></i> Munich, Germany</span>
+								<div class="post-author-social">
+									<ul>
+										<li><a href="http://twitter.com/preslavrachev" class="smallsocial twitter" target="_blank"><i class="ic ic-twitter"></i></a></li>
+										<li><a href="http://github.com/preslavrachev" class="smallsocial github" target="_blank"><i class="fab fa-github"></i></a></li>
+										<li><a href="https://plus.google.com/+PreslavRachev" class="smallsocial googleplus" target="_blank"><i
+												 class="fab fa-google-plus"></i></a></li>
+										<li><a href="http://www.linkedin.com/in/preslavrachev" class="smallsocial linkedin" target="_blank"><i class="fab fa-linkedin"></i></a></li>
+										<li><a href="https://stackoverflow.com/users/1107412/preslav-rachev" class="smallsocial stackoverflow" target="_blank"><i
+												 class="fab fa-stack-overflow"></i></a></li>
+									</ul>
+								</div>
+							</div>
+							<div class="clear"></div>
+						</aside>
+			</section>
+
+
+			<section class="post-comments">
+				<script src="https://utteranc.es/client.js" 
+                        repo="preslavrachev/preslav.me-comments" 
+                        issue-term="pathname" 
+                        theme="github-light"
+                        crossorigin="anonymous" 
+                        async>
+                </script>
+			</section>
+
+			<aside class="post-nav">
+				<div class="clear"></div>
+			</aside>
+		</div>
+	</article>
+</main>
+
+
+		<div id="body-class" style="display: none;" class="post-template tag-kotlin tag-conference tag-amsterdam"></div>
+
+		<footer id="footer">
+			<div class="inner">
+				<section class="credits">
+					<span class="credits-theme">Theme <a href="https://github.com/zutrinken/attila">Attila</a> by <a href="https://zutrinken.com" rel="nofollow">zutrinken</a></span>
+					<span class="credits-software">Published with <a href="https://ghost.org">Ghost</a></span>
+				</section>
+			</div>
+		</footer>
+	</section>
+
+	<script type="text/javascript" src="/assets/js/script.js?v=7d79bd6108"></script>
+
+	<!-- Clicky Analytics -->
+<script>var clicky_site_ids = clicky_site_ids || []; clicky_site_ids.push(101131786);</script>
+<script async src="//static.getclicky.com/js"></script>
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-131031623-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-131031623-1');
+    
+  function handler() {
+        if (scroll_count === 200) {
+            document.removeEventListener('scroll', handler);
+            gtag('event', 'scroll', {
+  				'event_category' : 'behaviour',
+  				'event_label' : 'scroll'
+			});
+        } else {
+            scroll_count += 1;
+        }
+    }
+
+  scroll_count = 0;
+  document.addEventListener('scroll', handler)
+</script>
+
+<script>
+    window.cookieconsent.initialise({
+    container: document.getElementById("content"),
+    palette:{
+      popup: {background: "#fff"},
+      button: {background: "#26a8ed", text: "#fff"},
+    },
+    revokable:false,
+    onStatusChange: function(status) {
+      if (this.hasConsented()) {
+      	mixpanel.track("Accepts cookie consent");
+      }
+    },
+    law: {
+      regionalLaw: true,
+    },
+    location: true,
+    content: {
+    	message: "This blog uses cookies and collects limited analytics, to ensure you get the best reading experience."
+    },
+    position: "bottom-right"
+  });
+</script> 
+
+<script src="https://www.gitcdn.xyz/repo/alexritchey/Ghost-Archives/master/src/jquery.ghostArchives.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+
+				<title>Gulp vs Grunt. Why one? Why the Other?</title>
+
+	<meta name="HandheldFriendly" content="True" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+	<link rel="stylesheet" type="text/css" href="/assets/css/style.css?v=7d79bd6108" />
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+
+	<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="canonical" href="https://preslav.me/2015/01/06/gulp-vs-grunt-why-one-why-the-other/" />
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+    <link rel="amphtml" href="https://preslav.me/2015/01/06/gulp-vs-grunt-why-one-why-the-other/amp/" />
+    
+    <meta property="og:site_name" content="Preslav Rachev" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Gulp vs Grunt. Why one? Why the Other?" />
+    <meta property="og:description" content="So you’ve been trying to wrap your heads around and decide between Grunt and Gulp? Yeah, me too, been there, done that. In my case, the decision wasn’t really hard. I’ve never had strong feelings for Grunt, and for a long time, I used a custom made" />
+    <meta property="og:url" content="https://preslav.me/2015/01/06/gulp-vs-grunt-why-one-why-the-other/" />
+    <meta property="og:image" content="https://preslav.me/content/images/2019/02/gulp-vs-grunt-header.jpeg" />
+    <meta property="article:published_time" content="2015-01-06T06:29:00.000Z" />
+    <meta property="article:modified_time" content="2019-02-05T06:38:14.000Z" />
+    <meta property="article:tag" content="Programming" />
+    <meta property="article:tag" content="JavaScript" />
+    <meta property="article:tag" content="Gulp" />
+    <meta property="article:tag" content="Grunt" />
+    
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Gulp vs Grunt. Why one? Why the Other?" />
+    <meta name="twitter:description" content="So you’ve been trying to wrap your heads around and decide between Grunt and Gulp? Yeah, me too, been there, done that. In my case, the decision wasn’t really hard. I’ve never had strong feelings for Grunt, and for a long time, I used a custom made" />
+    <meta name="twitter:url" content="https://preslav.me/2015/01/06/gulp-vs-grunt-why-one-why-the-other/" />
+    <meta name="twitter:image" content="https://preslav.me/content/images/2019/02/gulp-vs-grunt-header.jpeg" />
+    <meta name="twitter:label1" content="Written by" />
+    <meta name="twitter:data1" content="Preslav Rachev" />
+    <meta name="twitter:label2" content="Filed under" />
+    <meta name="twitter:data2" content="Programming, JavaScript, Gulp, Grunt" />
+    <meta name="twitter:site" content="@preslavrachev" />
+    <meta property="og:image:width" content="949" />
+    <meta property="og:image:height" content="485" />
+    
+    <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "publisher": {
+        "@type": "Organization",
+        "name": "Preslav Rachev",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "https://preslav.me/favicon.ico",
+            "width": 60,
+            "height": 60
+        }
+    },
+    "author": {
+        "@type": "Person",
+        "name": "Preslav Rachev",
+        "image": {
+            "@type": "ImageObject",
+            "url": "https://preslav.me/content/images/2018/12/3Uv6SjbG_400x400.jpg",
+            "width": 400,
+            "height": 400
+        },
+        "url": "https://preslav.me/author/preslav/",
+        "sameAs": []
+    },
+    "headline": "Gulp vs Grunt. Why one? Why the Other?",
+    "url": "https://preslav.me/2015/01/06/gulp-vs-grunt-why-one-why-the-other/",
+    "datePublished": "2015-01-06T06:29:00.000Z",
+    "dateModified": "2019-02-05T06:38:14.000Z",
+    "image": {
+        "@type": "ImageObject",
+        "url": "https://preslav.me/content/images/2019/02/gulp-vs-grunt-header.jpeg",
+        "width": 949,
+        "height": 485
+    },
+    "keywords": "Programming, JavaScript, Gulp, Grunt",
+    "description": "So you’ve been trying to wrap your heads around and decide between Grunt and Gulp? Yeah, me too, been there, done that. In my case, the decision wasn’t really hard. I’ve never had strong feelings for Grunt, and for a long time, I used a custom made",
+    "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://preslav.me/"
+    }
+}
+    </script>
+
+    <script src="/public/ghost-sdk.min.js?v=7d79bd6108"></script>
+<script>
+ghost.init({
+	clientId: "ghost-frontend",
+	clientSecret: "2a78cd55fca9"
+});
+</script>
+    <meta name="generator" content="Ghost 2.6" />
+    <link rel="alternate" type="application/rss+xml" title="Preslav Rachev" href="https://preslav.me/rss/" />
+    <link href="https://micro.blog/preslavrachev" rel="me" />
+<link href="https://github.com/preslavrachev" rel="me" />
+
+<link rel="micropub" href="https://untitled-ijfrpfomttsw.runkit.sh/micropub">
+<link rel="token_endpoint" href="https://tokens.indieauth.com/token">
+<link rel="authorization_endpoint" href="https://indieauth.com/auth">
+
+<style>
+    .post-full-content pre {
+    	margin: 1.5em 0 3em !important;
+	}
+    
+    .blog-description: {
+        background-color: #37353dad;
+    	padding: 1rem;
+    }
+    
+    
+     /* Atilla-related
+    .inner {
+    	max-width: 36em !important;
+    }
+    
+    .blog-cover {
+    	opacity: 0.7;
+        animation: none;
+    }
+    
+    .post-comments: {
+    	display:auto !important;
+    }
+    */
+    
+    .blog-cover {
+    	opacity: 0.7;
+        animation: none;
+    }
+    
+    #post-header.has-cover {
+    	padding-top: 4em;
+    }
+    
+    #blog-header.has-cover {
+    	padding: 2em 0 2em;
+    }  
+</style>
+</head>
+
+<body class="post-template tag-programming tag-javascript tag-gulp tag-grunt">
+
+	<nav id="menu">
+	<a class="close-button">Close</a>
+	<div class="nav-wrapper">
+		<p class="nav-label">Menu</p>
+		<ul>
+			<li class="nav-home" role="presentation"><a href="https://preslav.me/">Home</a></li>
+			<li class="nav-about" role="presentation"><a href="https://preslav.me/about-me/">About</a></li>
+			<li class="nav-munich-tech-community" role="presentation"><a href="https://preslav.me/aggregated-munich-tech-community/">Munich Tech Community</a></li>
+			<li class="nav-devnotes" role="presentation"><a href="https://devnotes.space">DevNotes</a></li>
+			<li class="nav-blogroll" role="presentation"><a href="https://preslav.me/blogroll/">Blogroll</a></li>
+			<li class="nav-contact" role="presentation"><a href="https://preslav.me/contact/">Contact</a></li>
+			<li class="nav-twitter"><a href="https://twitter.com/preslavrachev" title="@preslavrachev"><i class="ic ic-twitter"></i> Twitter</a></li>
+			<li class="nav-rss"><a href="https://preslav.me/rss/"><i class="ic ic-rss"></i> Subscribe</a></li>
+		</ul>
+	</div>
+</nav>
+
+
+	<section id="wrapper">
+		<a class="hidden-close"></a>
+		
+
+<div class="progress-container">
+	<span class="progress-bar"></span>
+</div>
+
+<header id="post-header" class="has-cover" >
+	<div class="inner">
+		<nav id="navigation">
+			<span id="home-button" class="nav-button">
+				<a class="home-button" href="https://preslav.me" title="Home"><i class="ic ic-arrow-left"></i> Home</a>
+			</span>
+			<span id="menu-button" class="nav-button">
+				<a class="menu-button"><i class="ic ic-menu"></i> Menu</a>
+			</span>
+		</nav>
+			<h1 class="post-title">Gulp vs Grunt. Why one? Why the Other?</h1>
+			<span class="post-meta"><a href="/about-me">Preslav Rachev</a> on <a href="/tag/programming/">Programming</a>, <a href="/tag/javascript/">JavaScript</a>, <a href="/tag/gulp/">Gulp</a>, <a href="/tag/grunt/">Grunt</a> | <time datetime="2015-01-06">06 Jan 2015</time></span>
+				
+		<div class="post-cover cover" style="background-image: url('/content/images/2019/02/gulp-vs-grunt-header.jpeg');"></div>
+	</div>
+</header>
+
+<main class="content" role="main">
+	<article class="post tag-programming tag-javascript tag-gulp tag-grunt">
+		<div class="inner">
+
+			<section class="post-content">
+				<p>So you’ve been trying to wrap your heads around and decide between Grunt and Gulp? Yeah, me too, been there, done that. In my case, the decision wasn’t really hard. I’ve never had strong feelings for Grunt, and for a long time, I used a custom made ANT script. I used to copy it over to every new project, and it helped me with basic tasks — moving, copying, cleaning, linting, minifying, etc. At one point, I switched over to Grunt, but my workflow essentially mimicked the one I had already created using ANT.</p><p>So, when Gulp came out, I was right at the point of willing to dive deep into JS-based task runners. Plus, it quickly became the darling of a large portion of the JS community, and many projects, like Ionic, adopted it right away. So, my choice was easy.</p><figure class="kg-card kg-embed-card"><blockquote class="twitter-tweet"><p lang="en" dir="ltr">Getting started with Gulp <a href="http://t.co/qKo0rOXGT4">http://t.co/qKo0rOXGT4</a> &quot;Gulp is a streaming build system&quot;. Think Grunt, but faster and less config.</p>&mdash; Sindre Sorhus (@sindresorhus) <a href="https://twitter.com/sindresorhus/status/420272334281662464?ref_src=twsrc%5Etfw">January 6, 2014</a></blockquote>
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</figure><p>Yet, writing Grunt off for all the wrong reasons does not feel right. It is still a great tool, with a bustling community around it, so it makes a lot of sense to make a proper comparison between Grunt and Gulp.</p><h1 id="the-differences">The Differences</h1><figure class="kg-card kg-embed-card"><blockquote class="twitter-tweet"><p lang="en" dir="ltr"><a href="https://twitter.com/hashtag/Grunt?src=hash&amp;ref_src=twsrc%5Etfw">#Grunt</a> vs <a href="https://twitter.com/hashtag/Gulp?src=hash&amp;ref_src=twsrc%5Etfw">#Gulp</a>: <a href="http://t.co/eaaolHHIl6">http://t.co/eaaolHHIl6</a> (piping is beautiful!) This is so reminds me of <a href="https://twitter.com/hashtag/Maven?src=hash&amp;ref_src=twsrc%5Etfw">#Maven</a> vs <a href="https://twitter.com/hashtag/Gradle?src=hash&amp;ref_src=twsrc%5Etfw">#Gradle</a>. Always voted for code over config</p>&mdash; Evgeny Goldin (@evgeny_goldin) <a href="https://twitter.com/evgeny_goldin/status/521003643802513409?ref_src=twsrc%5Etfw">October 11, 2014</a></blockquote>
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</figure><p>There are two main differences between Grunt and Gulp:</p><ol><li>Grunt focuses on configuration, while Gulp focuses on code</li><li>Grunt was built around a set of <a href="http://bocoup.com/weblog/introducing-grunt/" rel="nofollow noopener noopener">built-in, and commonly used tasks</a>, while Gulp came around with the idea of enforcing nothing, but how community-developed micro-tasks should connect to each other</li></ol><p>That is not to say that Grunt does not support community extensions. Of course, Grunt has supported creating custom plugins since the beginning, and I am sure that one can find a plugin for just about anything one needs. It was just the nature of the built-in tasks that made me stick around a little longer with my ANT script. In retrospect, I have to admit that I was wrong that for being sceptical about it becoming as popular as it is today. In early 2015, Grunt still holds a larger community than Gulp, despite the latter catching up fast.</p><p>Every task in Grunt is an array of different plugin configurations, that simply get executed one after another, in a strictly independent, and sequential fashion:</p><pre><code class="language-javascript">grunt.initConfig({
+  clean: {
+    src: ['build/app.js', 'build/vendor.js']
+  },
+  
+  copy: {
+    files: [{
+      src: 'build/app.js',
+      dest: 'build/dist/app.js'
+    }]
+  }
+  
+  concat: {
+    'build/app.js': ['build/vendors.js', 'build/app.js']
+  }
+  
+  // ... other task configurations ...
+  
+});
+
+grunt.registerTask('build', ['clean', 'bower', 'browserify', 'concat', 'copy']);
+</code></pre>
+<p>In this case, ‘clean’ and ‘concat’ must be configured before the ‘build’ task is registered. Each task configuration is independent from all the rest. When dealing with IO, such as files, each task accesses the file separately — opening the file, applying the changes, and closing the file. Therefore, almost every task requires a source and destination to be specified. This not only doubles the effort for the developer, but it also makes Grunt relatively slower thanGulp.</p><p>Gulp on the other hand is all about streams and building complex pipelines with ease. It uses node.js’ streams, and executes faster, since it does not open/close files, or create intermediary copies all the time. This is a sample task declaration, taken straight from Ionic’s gulpfile.js</p><pre><code class="language-javascript">//import the necessary gulp plugins
+var gulp = require('gulp');
+var sass = require('gulp-sass');
+var minifyCss = require('gulp-minify-css');
+var rename = require('gulp-rename');
+
+//declare the task
+gulp.task('sass', function(done) {
+  gulp.src('./scss/ionic.app.scss')
+    .pipe(sass())
+    .pipe(gulp.dest('./www/css/'))
+    .pipe(minifyCss({
+      keepSpecialComments: 0
+    }))
+    .pipe(rename({ extname: '.min.css' }))
+    .pipe(gulp.dest('./www/css/'))
+    .on('end', done);
+});
+</code></pre>
+<p>One thing that is immediately noticed here, is the lack of any up-front configuration, especially, specifying a source and destination. It is clear how one processor plugs into another. Just like LEGO bricks, plugins fit right into each other. The magic happens because of the object format that plugins exchange, the so called <a href="https://github.com/wearefractal/vinyl" rel="nofollow noopener noopener">Vinyl</a>. Vinyl is just an abstraction that describes a virtual file object — one that could refer to an existing file on the FS, a stream, or simply dead-ends with a null.</p><p>The use of streams is also a part of how gulp plugins are developed. In unison with the UNIX philosophy, gulp plugins must <a href="https://github.com/gulpjs/gulp/blob/master/docs/writing-a-plugin/guidelines.md" rel="nofollow noopener noopener"><strong><strong>try to do one thing well</strong></strong></a><strong><strong>. </strong></strong>In simple words, if your plugin tries to do way too many things, better split it into several smaller plugins, and try to use as many readily developed plugins as you can. Let the complexity reside within the task orchestration, not the plugin body.</p><p>Both Grunt and Gulp have their own specifics when developing extensions. Both will make you sacrifice a bit of the beauty of your code, for the sake of plugging it into each build system. Truth is though that Gulp plugins feel one idea less coupled than their Grunt counterparts. This is because every Gulp plugin is first and foremost a legit node.js streaming module. With a bit of fitting, it can be re-used in other pieces of streaming node.js code.</p><figure class="kg-card kg-image-card"><img src="/content/images/2019/02/image.png" class="kg-image"><figcaption><a href="https://twitter.com/maxogden/status/421375617733386242">@maxodgen |&nbsp;Twitter</a></figcaption></figure><p>One word of advice though is to try not to fit every piece of your code into a Gulp plugin. As this <a href="http://blog.overzealous.com/post/74121048393/why-you-shouldnt-create-a-gulp-plugin-or-how-to" rel="nofollow noopener noopener">article points out</a>, thinking of your code as a Gulp plugin would inevitably increase configuration, which is counter to what the Gulp guidelines, and the <strong><strong>do one thing well </strong></strong>philosophy suggest. This is where the <strong><strong>code over configuration </strong></strong>principle shines.Unlike Grunt, Gulp makes it extremely easy to fit other code within a task definition, besides streaming from one plugin to another. In fact, a Gulp task may not even contain a streaming pipeline:</p><pre><code class="language-javascript">var http = require('http');
+ 
+//declare the task
+gulp.task('server', function(done) {
+  //start an http server (I know, a totally useless example, but helps to illustrate the point)
+  var requestListener = function (req, res) {
+    res.writeHead(200);
+    res.end('Hello, World!\n');
+  }
+  
+  var server = http.createServer(requestListener);
+  server.listen(8080);
+  
+  done();
+});
+</code></pre>
+<h1 id="the-verdict">The Verdict</h1><p>Has Gulp made Grunt obsolete. <a href="http://qr.ae/6rv0g" rel="nofollow noopener noopener"><em>No, for the same reason that Burger King didn’t make McDonald’s obsolete</em></a><em>. </em>Truth is, if you’re starting to work with JS-based build systems, there is a high chance that you’d pick Gulp right away. The prospects for it just seem a little rosier, plus, it has been adopted by a large portion of projects. Yet, if you are still using Grunt and feel comfortable using it, there is nothing to be worried about — the community is still there, bigger than Gulp, and keeps growing. Grunt has almost a couple of years of advantage, and I am sure that large project maintainers will try to stick to it for as long as possible. Another advantage of using Grunt is if all you need is that little built-in set of simple tasks. In that case, you’d feel right at home with it, and Gulp, despite all of its flexibility, will make you spend more time in theory than you need. As with everything else project related, you should choose based on the circumstances.</p><h1 id="resources">Resources</h1><ul><li><a href="http://benalman.com/news/2012/08/why-grunt/">Why grunt? Why not something else?</a></li><li><a href="http://markdalgleish.github.io/presentation-build-wars-gulp-vs-grunt">Build Wars: Gulp vs Grunt</a></li><li><a href="https://medium.com/p/3828e8126466">gulp - Eric Schoffstall - Medium</a></li><li><a href="http://www.100percentjs.com/just-like-grunt-gulp-browserify-now/">自家用車の新車について</a></li></ul><p>and others...</p>
+			</section>
+
+			<section class="post-info">
+
+				<div class="post-share">
+					<a class="twitter" href="https://twitter.com/share?text=Gulp vs Grunt. Why one? Why the Other?&url=https://preslav.me/2015/01/06/gulp-vs-grunt-why-one-why-the-other/" onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+						<i class="ic ic-twitter"></i><span class="hidden">Twitter</span>
+					</a>
+					<a class="facebook" href="https://www.facebook.com/sharer/sharer.php?u=https://preslav.me/2015/01/06/gulp-vs-grunt-why-one-why-the-other/" onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+						<i class="ic ic-facebook"></i><span class="hidden">Facebook</span>
+					</a>
+					<a class="googleplus" href="https://plus.google.com/share?url=https://preslav.me/2015/01/06/gulp-vs-grunt-why-one-why-the-other/" onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+						<i class="ic ic-googleplus"></i><span class="hidden">Google+</span>
+					</a>
+					<div class="clear"></div>
+				</div>
+
+				<aside class="post-tags">
+					<a href="/tag/programming/">Programming</a> <a href="/tag/javascript/">JavaScript</a> <a href="/tag/gulp/">Gulp</a> <a href="/tag/grunt/">Grunt</a>
+				</aside>
+
+				<div class="clear"></div>
+						<aside class="post-author">
+							<figure class="post-author-avatar avatar">
+									<img src="/content/images/2018/12/3Uv6SjbG_400x400.jpg" alt="Preslav Rachev" />
+							</figure>
+							<div class="post-author-bio">
+								<h4 class="post-author-name"><a href="/author/preslav/">Preslav Rachev</a></h4>
+									<p class="post-author-about">I am a software engineer at KI labs GmbH and advocate for strong developer culture. In my free time, I enjoy running in the woods, reading a great book, or working on my next piece of writing/music.</p>
+								<style>
+									.bmc-button img {
+										width: 27px !important;
+										margin-bottom: 1px !important;
+										box-shadow: none !important;
+										border: none !important;
+										vertical-align: middle !important;
+									}
+								
+									.bmc-button {
+										line-height: 36px !important;
+										height: 37px !important;
+										text-decoration: none !important;
+										display: inline-flex !important;
+										color: #ffffff !important;
+										background-color: #FF813F !important;
+										border-radius: 3px !important;
+										border: 1px solid transparent !important;
+										padding: 1px 9px !important;
+										font-size: 22px !important;
+										letter-spacing: 0.6px !important;
+										box-shadow: 0px 1px 2px rgba(190, 190, 190, 0.5) !important;
+										-webkit-box-shadow: 0px 1px 2px 2px rgba(190, 190, 190, 0.5) !important;
+										margin: 0 auto !important;
+										font-family: 'Cookie', cursive !important;
+										-webkit-box-sizing: border-box !important;
+										box-sizing: border-box !important;
+										-o-transition: 0.3s all linear !important;
+										-webkit-transition: 0.3s all linear !important;
+										-moz-transition: 0.3s all linear !important;
+										-ms-transition: 0.3s all linear !important;
+										transition: 0.3s all linear !important;
+									}
+								
+									.bmc-button:hover,
+									.bmc-button:active,
+									.bmc-button:focus {
+										-webkit-box-shadow: 0px 1px 2px 2px rgba(190, 190, 190, 0.5) !important;
+										text-decoration: none !important;
+										box-shadow: 0px 1px 2px 2px rgba(190, 190, 190, 0.5) !important;
+										opacity: 0.85 !important;
+										color: #ffffff !important;
+									}
+								</style>
+								<link href="https://fonts.googleapis.com/css?family=Cookie" rel="stylesheet"><a class="bmc-button" target="_blank"
+									href="https://www.buymeacoffee.com/0B7zhlQ2I"><img src="https://www.buymeacoffee.com/assets/img/BMC-btn-logo.svg"
+										alt="Buy me a coffee"><span style="margin-left:5px; margin-top: 0px; margin-right: 0px; font-size: 1em">Buy me a coffee</span></a>
+								<br/>
+									<span class="post-author-location"><i class="ic ic-location"></i> Munich, Germany</span>
+								<div class="post-author-social">
+									<ul>
+										<li><a href="http://twitter.com/preslavrachev" class="smallsocial twitter" target="_blank"><i class="ic ic-twitter"></i></a></li>
+										<li><a href="http://github.com/preslavrachev" class="smallsocial github" target="_blank"><i class="fab fa-github"></i></a></li>
+										<li><a href="https://plus.google.com/+PreslavRachev" class="smallsocial googleplus" target="_blank"><i
+												 class="fab fa-google-plus"></i></a></li>
+										<li><a href="http://www.linkedin.com/in/preslavrachev" class="smallsocial linkedin" target="_blank"><i class="fab fa-linkedin"></i></a></li>
+										<li><a href="https://stackoverflow.com/users/1107412/preslav-rachev" class="smallsocial stackoverflow" target="_blank"><i
+												 class="fab fa-stack-overflow"></i></a></li>
+									</ul>
+								</div>
+							</div>
+							<div class="clear"></div>
+						</aside>
+			</section>
+
+
+			<section class="post-comments">
+				<script src="https://utteranc.es/client.js" 
+                        repo="preslavrachev/preslav.me-comments" 
+                        issue-term="pathname" 
+                        theme="github-light"
+                        crossorigin="anonymous" 
+                        async>
+                </script>
+			</section>
+
+			<aside class="post-nav">
+					<a class="post-nav-next" href="/2015/02/21/what-s-with-the-50-72-rule/">
+						<section class="post-nav-teaser">
+							<i class="ic ic-arrow-left"></i>
+								<h2 class="post-nav-title">What’s with the 50/72 rule?</h2>
+								<p class="post-nav-excerpt">It is part of common sense to assume that the worthiest commit&hellip;</p>
+						</section>
+					</a>
+				<div class="clear"></div>
+			</aside>
+		</div>
+	</article>
+</main>
+
+
+		<div id="body-class" style="display: none;" class="post-template tag-programming tag-javascript tag-gulp tag-grunt"></div>
+
+		<footer id="footer">
+			<div class="inner">
+				<section class="credits">
+					<span class="credits-theme">Theme <a href="https://github.com/zutrinken/attila">Attila</a> by <a href="https://zutrinken.com" rel="nofollow">zutrinken</a></span>
+					<span class="credits-software">Published with <a href="https://ghost.org">Ghost</a></span>
+				</section>
+			</div>
+		</footer>
+	</section>
+
+	<script type="text/javascript" src="/assets/js/script.js?v=7d79bd6108"></script>
+
+	<!-- Clicky Analytics -->
+<script>var clicky_site_ids = clicky_site_ids || []; clicky_site_ids.push(101131786);</script>
+<script async src="//static.getclicky.com/js"></script>
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-131031623-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-131031623-1');
+    
+  function handler() {
+        if (scroll_count === 200) {
+            document.removeEventListener('scroll', handler);
+            gtag('event', 'scroll', {
+  				'event_category' : 'behaviour',
+  				'event_label' : 'scroll'
+			});
+        } else {
+            scroll_count += 1;
+        }
+    }
+
+  scroll_count = 0;
+  document.addEventListener('scroll', handler)
+</script>
+
+<script>
+    window.cookieconsent.initialise({
+    container: document.getElementById("content"),
+    palette:{
+      popup: {background: "#fff"},
+      button: {background: "#26a8ed", text: "#fff"},
+    },
+    revokable:false,
+    onStatusChange: function(status) {
+      if (this.hasConsented()) {
+      	mixpanel.track("Accepts cookie consent");
+      }
+    },
+    law: {
+      regionalLaw: true,
+    },
+    location: true,
+    content: {
+    	message: "This blog uses cookies and collects limited analytics, to ensure you get the best reading experience."
+    },
+    position: "bottom-right"
+  });
+</script> 
+
+<script src="https://www.gitcdn.xyz/repo/alexritchey/Ghost-Archives/master/src/jquery.ghostArchives.js"></script>
+
+</body>
+</html>

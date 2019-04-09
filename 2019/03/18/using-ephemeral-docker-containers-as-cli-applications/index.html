@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+
+				<title>Using Ephemeral Docker Containers as CLI Applications</title>
+
+	<meta name="HandheldFriendly" content="True" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+	<link rel="stylesheet" type="text/css" href="/assets/css/style.css?v=7d79bd6108" />
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+
+	<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="canonical" href="https://preslav.me/2019/03/18/using-ephemeral-docker-containers-as-cli-applications/" />
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+    <link rel="amphtml" href="https://preslav.me/2019/03/18/using-ephemeral-docker-containers-as-cli-applications/amp/" />
+    
+    <meta property="og:site_name" content="Preslav Rachev" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Using Ephemeral Docker Containers as CLI Applications" />
+    <meta property="og:description" content="Docker containers have proven themselves extremely useful in allowing developers to sandbox environments and ease the deployment of services. Have a complicated service setup? No worries. Simply, describe the steps in a Dockerfile and you should be able to replicate the process on every host OS that has Docker support." />
+    <meta property="og:url" content="https://preslav.me/2019/03/18/using-ephemeral-docker-containers-as-cli-applications/" />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1494412651409-8963ce7935a7?ixlib&#x3D;rb-1.2.1&amp;q&#x3D;80&amp;fm&#x3D;jpg&amp;crop&#x3D;entropy&amp;cs&#x3D;tinysrgb&amp;w&#x3D;1080&amp;fit&#x3D;max&amp;ixid&#x3D;eyJhcHBfaWQiOjExNzczfQ" />
+    <meta property="article:published_time" content="2019-03-18T06:30:04.000Z" />
+    <meta property="article:modified_time" content="2019-03-18T08:50:22.000Z" />
+    <meta property="article:tag" content="Programming" />
+    <meta property="article:tag" content="Docker" />
+    <meta property="article:tag" content="Python" />
+    
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Using Ephemeral Docker Containers as CLI Applications" />
+    <meta name="twitter:description" content="Docker containers have proven themselves extremely useful in allowing developers to sandbox environments and ease the deployment of services. Have a complicated service setup? No worries. Simply, describe the steps in a Dockerfile and you should be able to replicate the process on every host OS that has Docker support." />
+    <meta name="twitter:url" content="https://preslav.me/2019/03/18/using-ephemeral-docker-containers-as-cli-applications/" />
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1494412651409-8963ce7935a7?ixlib&#x3D;rb-1.2.1&amp;q&#x3D;80&amp;fm&#x3D;jpg&amp;crop&#x3D;entropy&amp;cs&#x3D;tinysrgb&amp;w&#x3D;1080&amp;fit&#x3D;max&amp;ixid&#x3D;eyJhcHBfaWQiOjExNzczfQ" />
+    <meta name="twitter:label1" content="Written by" />
+    <meta name="twitter:data1" content="Preslav Rachev" />
+    <meta name="twitter:label2" content="Filed under" />
+    <meta name="twitter:data2" content="Programming, Docker, Python" />
+    <meta name="twitter:site" content="@preslavrachev" />
+    <meta property="og:image:width" content="1080" />
+    <meta property="og:image:height" content="720" />
+    
+    <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "publisher": {
+        "@type": "Organization",
+        "name": "Preslav Rachev",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "https://preslav.me/favicon.ico",
+            "width": 60,
+            "height": 60
+        }
+    },
+    "author": {
+        "@type": "Person",
+        "name": "Preslav Rachev",
+        "image": {
+            "@type": "ImageObject",
+            "url": "https://preslav.me/content/images/2018/12/3Uv6SjbG_400x400.jpg",
+            "width": 400,
+            "height": 400
+        },
+        "url": "https://preslav.me/author/preslav/",
+        "sameAs": []
+    },
+    "headline": "Using Ephemeral Docker Containers as CLI Applications",
+    "url": "https://preslav.me/2019/03/18/using-ephemeral-docker-containers-as-cli-applications/",
+    "datePublished": "2019-03-18T06:30:04.000Z",
+    "dateModified": "2019-03-18T08:50:22.000Z",
+    "image": {
+        "@type": "ImageObject",
+        "url": "https://images.unsplash.com/photo-1494412651409-8963ce7935a7?ixlib=rb-1.2.1&q=80&fm=jpg&crop=entropy&cs=tinysrgb&w=1080&fit=max&ixid=eyJhcHBfaWQiOjExNzczfQ",
+        "width": 1080,
+        "height": 720
+    },
+    "keywords": "Programming, Docker, Python",
+    "description": "Docker containers have proven themselves extremely useful in allowing developers to sandbox environments and ease the deployment of services. Have a complicated service setup? No worries. Simply, describe the steps in a Dockerfile and you should be able to replicate the process on every host OS that has Docker support.",
+    "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://preslav.me/"
+    }
+}
+    </script>
+
+    <script src="/public/ghost-sdk.min.js?v=7d79bd6108"></script>
+<script>
+ghost.init({
+	clientId: "ghost-frontend",
+	clientSecret: "2a78cd55fca9"
+});
+</script>
+    <meta name="generator" content="Ghost 2.6" />
+    <link rel="alternate" type="application/rss+xml" title="Preslav Rachev" href="https://preslav.me/rss/" />
+    <link href="https://micro.blog/preslavrachev" rel="me" />
+<link href="https://github.com/preslavrachev" rel="me" />
+
+<link rel="micropub" href="https://untitled-ijfrpfomttsw.runkit.sh/micropub">
+<link rel="token_endpoint" href="https://tokens.indieauth.com/token">
+<link rel="authorization_endpoint" href="https://indieauth.com/auth">
+
+<style>
+    .post-full-content pre {
+    	margin: 1.5em 0 3em !important;
+	}
+    
+    .blog-description: {
+        background-color: #37353dad;
+    	padding: 1rem;
+    }
+    
+    
+     /* Atilla-related
+    .inner {
+    	max-width: 36em !important;
+    }
+    
+    .blog-cover {
+    	opacity: 0.7;
+        animation: none;
+    }
+    
+    .post-comments: {
+    	display:auto !important;
+    }
+    */
+    
+    .blog-cover {
+    	opacity: 0.7;
+        animation: none;
+    }
+    
+    #post-header.has-cover {
+    	padding-top: 4em;
+    }
+    
+    #blog-header.has-cover {
+    	padding: 2em 0 2em;
+    }  
+</style>
+</head>
+
+<body class="post-template tag-programming tag-docker tag-python">
+
+	<nav id="menu">
+	<a class="close-button">Close</a>
+	<div class="nav-wrapper">
+		<p class="nav-label">Menu</p>
+		<ul>
+			<li class="nav-home" role="presentation"><a href="https://preslav.me/">Home</a></li>
+			<li class="nav-about" role="presentation"><a href="https://preslav.me/about-me/">About</a></li>
+			<li class="nav-munich-tech-community" role="presentation"><a href="https://preslav.me/aggregated-munich-tech-community/">Munich Tech Community</a></li>
+			<li class="nav-devnotes" role="presentation"><a href="https://devnotes.space">DevNotes</a></li>
+			<li class="nav-blogroll" role="presentation"><a href="https://preslav.me/blogroll/">Blogroll</a></li>
+			<li class="nav-contact" role="presentation"><a href="https://preslav.me/contact/">Contact</a></li>
+			<li class="nav-twitter"><a href="https://twitter.com/preslavrachev" title="@preslavrachev"><i class="ic ic-twitter"></i> Twitter</a></li>
+			<li class="nav-rss"><a href="https://preslav.me/rss/"><i class="ic ic-rss"></i> Subscribe</a></li>
+		</ul>
+	</div>
+</nav>
+
+
+	<section id="wrapper">
+		<a class="hidden-close"></a>
+		
+
+<div class="progress-container">
+	<span class="progress-bar"></span>
+</div>
+
+<header id="post-header" class="has-cover" >
+	<div class="inner">
+		<nav id="navigation">
+			<span id="home-button" class="nav-button">
+				<a class="home-button" href="https://preslav.me" title="Home"><i class="ic ic-arrow-left"></i> Home</a>
+			</span>
+			<span id="menu-button" class="nav-button">
+				<a class="menu-button"><i class="ic ic-menu"></i> Menu</a>
+			</span>
+		</nav>
+			<h1 class="post-title">Using Ephemeral Docker Containers as CLI Applications</h1>
+			<span class="post-meta"><a href="/about-me">Preslav Rachev</a> on <a href="/tag/programming/">Programming</a>, <a href="/tag/docker/">Docker</a>, <a href="/tag/python/">Python</a> | <time datetime="2019-03-18">18 Mar 2019</time></span>
+				
+		<div class="post-cover cover" style="background-image: url('https://images.unsplash.com/photo-1494412651409-8963ce7935a7?ixlib&#x3D;rb-1.2.1&amp;q&#x3D;80&amp;fm&#x3D;jpg&amp;crop&#x3D;entropy&amp;cs&#x3D;tinysrgb&amp;w&#x3D;1080&amp;fit&#x3D;max&amp;ixid&#x3D;eyJhcHBfaWQiOjExNzczfQ');"></div>
+	</div>
+</header>
+
+<main class="content" role="main">
+	<article class="post tag-programming tag-docker tag-python">
+		<div class="inner">
+
+			<section class="post-content">
+				<p>Docker containers have proven themselves extremely useful in allowing developers to sandbox environments and ease the deployment of services. Have a complicated service setup? No worries. Simply, describe the steps in a <code>Dockerfile</code> and you should be able to replicate the process on every host OS that has Docker support.</p>
+<p>When I said services, I bet that the first thing you thought about was HTTP servers, or some sort of persistent, always running processes that send or accept requests to such services. While the majority of Docker use cases fit exactly into this scenario, the realm of possible applications it offers, far exceeds that.</p>
+<p>One such application is the use of Docker containers to sandbox the complex inner workings of a command-line (CLI) application. Most data projects involve the running of scheduled scripts which access remote services, do data processing and eventually, write the results either to disk, or to dedicated data storage. Such scripts have required dependencies, and often, the dependencies of one may collide with the ones required by another, which ends up in a big mess. This is the primary reason, why things like virtual environments in Python or Node.js' notorious <code>node_modules</code> folder exist in the first place. Yet, we all know one or two about <code>node_modules</code>...</p>
+<p><a href="https://hackernoon.com/circleci-performance-difference-between-cache-and-workspace-5567679c3601"><img src="https://proxy.duckduckgo.com/iu/?u=https%3A%2F%2Fcdn-images-1.medium.com%2Fmax%2F1600%2F0*i5S2tUk0CQBh1Euc.&amp;f=1" alt=""></a></p>
+<p>The ideal case for such applications would be statically-bound executable files containing everything needed, and running into their own dedicated processes. One such approach is championed by languages like Go, Swift, and Kotlin's Native option (and of course, good old C/C++). Others, like Java (fat Jars) and Python (wheels) offer a somewhat reasonable compromise by putting the code and every dependency into a single deployable artifact. I call this a compromise, because it still requires the presence of either JDK or a Python runtime on the host OS.</p>
+<p>The majority of the time however, we won't have the opportunity to deploy everything into a single executable. Much of the time, we also won't have the freedom to install different runtimes globally. In such cases, baking a CLI application together with all of its dependencies into a dedicated Docker image can be a good option. Let's try a simple example:</p>
+<h2 id="anexample">An Example</h2>
+<p>Here is a simple Python script, which will fetch the current price of Bitcoin, and convert it to a desired fiat currency of our choice (&quot;USD&quot;, &quot;EUR&quot;).</p>
+<pre><code class="language-python">import argparse
+import requests
+
+def fetch(currency):
+    price = requests.get(&quot;https://api.coindesk.com/v1/bpi/currentprice.json&quot;).json()[&quot;bpi&quot;][currency][&quot;rate_float&quot;]
+
+    print(price)
+
+parser = argparse.ArgumentParser(description=&quot;My Fancy CLI&quot;)
+parser.add_argument(
+    '--currency',
+    help='Choose currency to convert to',
+)
+args = parser.parse_args()
+
+if __name__ == &quot;__main__&quot;:
+    print(args)
+    if args.currency:
+        fetch(args.currency)
+    else:
+        parser.print_help()
+</code></pre>
+<p>There are two things to keep a note on, in this example. First, is the use of <code>requests</code>, a popular HTTP request/response library, but not a part of the Python standard library, so it has to be installed separately. Second, is the use of command-line arguments, namely <code>--currency</code>.</p>
+<p>Next, is the <code>Dockerfile</code>:</p>
+<pre><code class="language-Dockerfile">FROM python:3.7
+RUN pip install requests
+COPY script.py .
+ENTRYPOINT [&quot;python&quot;, &quot;script.py&quot;]
+</code></pre>
+<p>Again, very simple. In light of keeping the example simple, we will install <code>requests</code> right in the <code>Dockerfile</code> and using a <code>requirements.txt</code> file or some kind of a setup script, which are the common practice.</p>
+<p>Let's build the image, assuming that both files are in our current directory:</p>
+<pre><code class="language-bash">docker build -t my-command .
+</code></pre>
+<p>Great, now we can grab our newly baked image and run it:</p>
+<pre><code class="language-bash">docker run --rm -it my-command --currency USD
+</code></pre>
+<p>The <code>--rm</code> option will remove the container immediately after the command has been executed. If you have ever ran <code>docker ps -a</code>, you would know that inactive containers do not get deleted immediately, but are left for a possible later restart. Assuming that we would like to run our command multiple times per day, this will result in lots of wasted resources.</p>
+<p>The other interesting option is <code>-i</code>. This one, combined with the fact that we chose <code>ENTRYPOINT</code> instead of <code>CMD</code> for our starting point in the <code>Dockerfile</code> would allow us to pass the <code>--currency</code> argument at the very end. There are a few subtle differences between <code>ENTRYPOINT</code> and <code>CMD</code> but the very basic is the ability to adapt <code>ENTRYPOINT</code>, while <code>CMD</code> is more or less final.</p>
+<p>You can, of course, create an alias fo your command to make the execution easier:</p>
+<pre><code class="language-bash">alias my-cmd=&quot;docker run --rm -i my-command&quot;
+
+my-cmd --currency USD
+</code></pre>
+<p>That's it! Now you can ahead and run your application as a scheduled cron task and e.g. accrue data over time:</p>
+<pre><code class="language-bash">*/10 * * * * user ./my-cmd --currency USD &gt;&gt; prices.csv
+</code></pre>
+<h2 id="limitations">Limitations</h2>
+<p>Once again, the solution is far from the ease of a drag-and-drop that Go executables allow. Also, it assumes a working Docker setup (less and less of an issue nowadays), and quite a bit of space, because of the images. It also, for the most part, requires building the image locally, or at least, pulling the ingredients from an image registry. Docker allows for an option to save an image with all of its dependencies and load it on a remote host OS. Think of it as a sort of fat-Jar. I tried it just for the sake of demonstration, but it seems very impractical, as it resulted in an enormous zip file for that tiny Python script (of course, it bakes a whole Linux bistro inside):</p>
+<pre><code class="language-bash">docker save -o my-command.zip my-command
+</code></pre>
+<pre><code class="language-bash">rw------- 1 user user 920M Mar 17 08:47 my-command.zip
+</code></pre>
+
+			</section>
+
+			<section class="post-info">
+
+				<div class="post-share">
+					<a class="twitter" href="https://twitter.com/share?text=Using Ephemeral Docker Containers as CLI Applications&url=https://preslav.me/2019/03/18/using-ephemeral-docker-containers-as-cli-applications/" onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+						<i class="ic ic-twitter"></i><span class="hidden">Twitter</span>
+					</a>
+					<a class="facebook" href="https://www.facebook.com/sharer/sharer.php?u=https://preslav.me/2019/03/18/using-ephemeral-docker-containers-as-cli-applications/" onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+						<i class="ic ic-facebook"></i><span class="hidden">Facebook</span>
+					</a>
+					<a class="googleplus" href="https://plus.google.com/share?url=https://preslav.me/2019/03/18/using-ephemeral-docker-containers-as-cli-applications/" onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+						<i class="ic ic-googleplus"></i><span class="hidden">Google+</span>
+					</a>
+					<div class="clear"></div>
+				</div>
+
+				<aside class="post-tags">
+					<a href="/tag/programming/">Programming</a> <a href="/tag/docker/">Docker</a> <a href="/tag/python/">Python</a>
+				</aside>
+
+				<div class="clear"></div>
+						<aside class="post-author">
+							<figure class="post-author-avatar avatar">
+									<img src="/content/images/2018/12/3Uv6SjbG_400x400.jpg" alt="Preslav Rachev" />
+							</figure>
+							<div class="post-author-bio">
+								<h4 class="post-author-name"><a href="/author/preslav/">Preslav Rachev</a></h4>
+									<p class="post-author-about">I am a software engineer at KI labs GmbH and advocate for strong developer culture. In my free time, I enjoy running in the woods, reading a great book, or working on my next piece of writing/music.</p>
+								<style>
+									.bmc-button img {
+										width: 27px !important;
+										margin-bottom: 1px !important;
+										box-shadow: none !important;
+										border: none !important;
+										vertical-align: middle !important;
+									}
+								
+									.bmc-button {
+										line-height: 36px !important;
+										height: 37px !important;
+										text-decoration: none !important;
+										display: inline-flex !important;
+										color: #ffffff !important;
+										background-color: #FF813F !important;
+										border-radius: 3px !important;
+										border: 1px solid transparent !important;
+										padding: 1px 9px !important;
+										font-size: 22px !important;
+										letter-spacing: 0.6px !important;
+										box-shadow: 0px 1px 2px rgba(190, 190, 190, 0.5) !important;
+										-webkit-box-shadow: 0px 1px 2px 2px rgba(190, 190, 190, 0.5) !important;
+										margin: 0 auto !important;
+										font-family: 'Cookie', cursive !important;
+										-webkit-box-sizing: border-box !important;
+										box-sizing: border-box !important;
+										-o-transition: 0.3s all linear !important;
+										-webkit-transition: 0.3s all linear !important;
+										-moz-transition: 0.3s all linear !important;
+										-ms-transition: 0.3s all linear !important;
+										transition: 0.3s all linear !important;
+									}
+								
+									.bmc-button:hover,
+									.bmc-button:active,
+									.bmc-button:focus {
+										-webkit-box-shadow: 0px 1px 2px 2px rgba(190, 190, 190, 0.5) !important;
+										text-decoration: none !important;
+										box-shadow: 0px 1px 2px 2px rgba(190, 190, 190, 0.5) !important;
+										opacity: 0.85 !important;
+										color: #ffffff !important;
+									}
+								</style>
+								<link href="https://fonts.googleapis.com/css?family=Cookie" rel="stylesheet"><a class="bmc-button" target="_blank"
+									href="https://www.buymeacoffee.com/0B7zhlQ2I"><img src="https://www.buymeacoffee.com/assets/img/BMC-btn-logo.svg"
+										alt="Buy me a coffee"><span style="margin-left:5px; margin-top: 0px; margin-right: 0px; font-size: 1em">Buy me a coffee</span></a>
+								<br/>
+									<span class="post-author-location"><i class="ic ic-location"></i> Munich, Germany</span>
+								<div class="post-author-social">
+									<ul>
+										<li><a href="http://twitter.com/preslavrachev" class="smallsocial twitter" target="_blank"><i class="ic ic-twitter"></i></a></li>
+										<li><a href="http://github.com/preslavrachev" class="smallsocial github" target="_blank"><i class="fab fa-github"></i></a></li>
+										<li><a href="https://plus.google.com/+PreslavRachev" class="smallsocial googleplus" target="_blank"><i
+												 class="fab fa-google-plus"></i></a></li>
+										<li><a href="http://www.linkedin.com/in/preslavrachev" class="smallsocial linkedin" target="_blank"><i class="fab fa-linkedin"></i></a></li>
+										<li><a href="https://stackoverflow.com/users/1107412/preslav-rachev" class="smallsocial stackoverflow" target="_blank"><i
+												 class="fab fa-stack-overflow"></i></a></li>
+									</ul>
+								</div>
+							</div>
+							<div class="clear"></div>
+						</aside>
+			</section>
+
+
+			<section class="post-comments">
+				<script src="https://utteranc.es/client.js" 
+                        repo="preslavrachev/preslav.me-comments" 
+                        issue-term="pathname" 
+                        theme="github-light"
+                        crossorigin="anonymous" 
+                        async>
+                </script>
+			</section>
+
+			<aside class="post-nav">
+					<a class="post-nav-next" href="/2019/03/23/give-me-back-my-monolith/">
+						<section class="post-nav-teaser">
+							<i class="ic ic-arrow-left"></i>
+								<h2 class="post-nav-title">Give Me Back My Monolith</h2>
+								<p class="post-nav-excerpt">Give Me Back My Monolith by Craig Kerstiens is something I have&hellip;</p>
+						</section>
+					</a>
+					<a class="post-nav-prev" href="/2019/02/20/my-baby-steps-with-go/">
+						<section class="post-nav-teaser">
+							<i class="ic ic-arrow-right"></i>
+								<h2 class="post-nav-title">My Baby Steps with Go</h2>
+								<p class="post-nav-excerpt">Last week, I made my first tentative foray into Go programming. My&hellip;</p>
+						</section>
+					</a>
+				<div class="clear"></div>
+			</aside>
+		</div>
+	</article>
+</main>
+
+
+		<div id="body-class" style="display: none;" class="post-template tag-programming tag-docker tag-python"></div>
+
+		<footer id="footer">
+			<div class="inner">
+				<section class="credits">
+					<span class="credits-theme">Theme <a href="https://github.com/zutrinken/attila">Attila</a> by <a href="https://zutrinken.com" rel="nofollow">zutrinken</a></span>
+					<span class="credits-software">Published with <a href="https://ghost.org">Ghost</a></span>
+				</section>
+			</div>
+		</footer>
+	</section>
+
+	<script type="text/javascript" src="/assets/js/script.js?v=7d79bd6108"></script>
+
+	<!-- Clicky Analytics -->
+<script>var clicky_site_ids = clicky_site_ids || []; clicky_site_ids.push(101131786);</script>
+<script async src="//static.getclicky.com/js"></script>
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-131031623-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-131031623-1');
+    
+  function handler() {
+        if (scroll_count === 200) {
+            document.removeEventListener('scroll', handler);
+            gtag('event', 'scroll', {
+  				'event_category' : 'behaviour',
+  				'event_label' : 'scroll'
+			});
+        } else {
+            scroll_count += 1;
+        }
+    }
+
+  scroll_count = 0;
+  document.addEventListener('scroll', handler)
+</script>
+
+<script>
+    window.cookieconsent.initialise({
+    container: document.getElementById("content"),
+    palette:{
+      popup: {background: "#fff"},
+      button: {background: "#26a8ed", text: "#fff"},
+    },
+    revokable:false,
+    onStatusChange: function(status) {
+      if (this.hasConsented()) {
+      	mixpanel.track("Accepts cookie consent");
+      }
+    },
+    law: {
+      regionalLaw: true,
+    },
+    location: true,
+    content: {
+    	message: "This blog uses cookies and collects limited analytics, to ensure you get the best reading experience."
+    },
+    position: "bottom-right"
+  });
+</script> 
+
+<script src="https://www.gitcdn.xyz/repo/alexritchey/Ghost-Archives/master/src/jquery.ghostArchives.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+
+				<title>Dependency Injection in Python: The Java Guy&#x27;s Perspective</title>
+
+	<meta name="HandheldFriendly" content="True" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+	<link rel="stylesheet" type="text/css" href="/assets/css/style.css?v=7d79bd6108" />
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+
+	<meta name="description" content="In this post, I will lay out my arguments why you might want to think about dependency injection for your next Python project. I am not trying to preach a certain style of &quot;best-practice&quot; programming, but simply, to share my perspective from the eyes of a seasoned Java developer." />
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="canonical" href="https://preslav.me/2018/12/20/dependency-injection-in-python/" />
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+    <link rel="amphtml" href="https://preslav.me/2018/12/20/dependency-injection-in-python/amp/" />
+    
+    <meta property="og:site_name" content="Preslav Rachev" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Dependency Injection in Python: The Java Guy&#x27;s Perspective" />
+    <meta property="og:description" content="In this post, I will lay out my arguments why you might want to think about dependency injection for your next Python project. I am not trying to preach a certain style of &quot;best-practice&quot; programming, but simply, to share my perspective from the eyes of a seasoned Java developer." />
+    <meta property="og:url" content="https://preslav.me/2018/12/20/dependency-injection-in-python/" />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1467733238130-bb6846885316?ixlib&#x3D;rb-1.2.1&amp;q&#x3D;80&amp;fm&#x3D;jpg&amp;crop&#x3D;entropy&amp;cs&#x3D;tinysrgb&amp;w&#x3D;1080&amp;fit&#x3D;max&amp;ixid&#x3D;eyJhcHBfaWQiOjExNzczfQ" />
+    <meta property="article:published_time" content="2018-12-20T13:34:36.000Z" />
+    <meta property="article:modified_time" content="2019-01-02T16:56:03.000Z" />
+    <meta property="article:tag" content="Programming" />
+    <meta property="article:tag" content="Python" />
+    
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Dependency Injection in Python: The Java Guy&#x27;s Perspective" />
+    <meta name="twitter:description" content="In this post, I will lay out my arguments why you might want to think about dependency injection for your next Python project. I am not trying to preach a certain style of &quot;best-practice&quot; programming, but simply, to share my perspective from the eyes of a seasoned Java developer." />
+    <meta name="twitter:url" content="https://preslav.me/2018/12/20/dependency-injection-in-python/" />
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1467733238130-bb6846885316?ixlib&#x3D;rb-1.2.1&amp;q&#x3D;80&amp;fm&#x3D;jpg&amp;crop&#x3D;entropy&amp;cs&#x3D;tinysrgb&amp;w&#x3D;1080&amp;fit&#x3D;max&amp;ixid&#x3D;eyJhcHBfaWQiOjExNzczfQ" />
+    <meta name="twitter:label1" content="Written by" />
+    <meta name="twitter:data1" content="Preslav Rachev" />
+    <meta name="twitter:label2" content="Filed under" />
+    <meta name="twitter:data2" content="Programming, Python" />
+    <meta name="twitter:site" content="@preslavrachev" />
+    <meta property="og:image:width" content="1080" />
+    <meta property="og:image:height" content="606" />
+    
+    <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "publisher": {
+        "@type": "Organization",
+        "name": "Preslav Rachev",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "https://preslav.me/favicon.ico",
+            "width": 60,
+            "height": 60
+        }
+    },
+    "author": {
+        "@type": "Person",
+        "name": "Preslav Rachev",
+        "image": {
+            "@type": "ImageObject",
+            "url": "https://preslav.me/content/images/2018/12/3Uv6SjbG_400x400.jpg",
+            "width": 400,
+            "height": 400
+        },
+        "url": "https://preslav.me/author/preslav/",
+        "sameAs": []
+    },
+    "headline": "Dependency Injection in Python: The Java Guy&#x27;s Perspective",
+    "url": "https://preslav.me/2018/12/20/dependency-injection-in-python/",
+    "datePublished": "2018-12-20T13:34:36.000Z",
+    "dateModified": "2019-01-02T16:56:03.000Z",
+    "image": {
+        "@type": "ImageObject",
+        "url": "https://images.unsplash.com/photo-1467733238130-bb6846885316?ixlib=rb-1.2.1&q=80&fm=jpg&crop=entropy&cs=tinysrgb&w=1080&fit=max&ixid=eyJhcHBfaWQiOjExNzczfQ",
+        "width": 1080,
+        "height": 606
+    },
+    "keywords": "Programming, Python",
+    "description": "In this post, I will lay out my arguments why you might want to think about dependency injection for your next Python project. I am not trying to preach a certain style of &quot;best-practice&quot; programming, but simply, to share my perspective from the eyes of a seasoned Java developer.",
+    "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://preslav.me/"
+    }
+}
+    </script>
+
+    <script src="/public/ghost-sdk.min.js?v=7d79bd6108"></script>
+<script>
+ghost.init({
+	clientId: "ghost-frontend",
+	clientSecret: "2a78cd55fca9"
+});
+</script>
+    <meta name="generator" content="Ghost 2.6" />
+    <link rel="alternate" type="application/rss+xml" title="Preslav Rachev" href="https://preslav.me/rss/" />
+    <link href="https://micro.blog/preslavrachev" rel="me" />
+<link href="https://github.com/preslavrachev" rel="me" />
+
+<link rel="micropub" href="https://untitled-ijfrpfomttsw.runkit.sh/micropub">
+<link rel="token_endpoint" href="https://tokens.indieauth.com/token">
+<link rel="authorization_endpoint" href="https://indieauth.com/auth">
+
+<style>
+    .post-full-content pre {
+    	margin: 1.5em 0 3em !important;
+	}
+    
+    .blog-description: {
+        background-color: #37353dad;
+    	padding: 1rem;
+    }
+    
+    
+     /* Atilla-related
+    .inner {
+    	max-width: 36em !important;
+    }
+    
+    .blog-cover {
+    	opacity: 0.7;
+        animation: none;
+    }
+    
+    .post-comments: {
+    	display:auto !important;
+    }
+    */
+    
+    .blog-cover {
+    	opacity: 0.7;
+        animation: none;
+    }
+    
+    #post-header.has-cover {
+    	padding-top: 4em;
+    }
+    
+    #blog-header.has-cover {
+    	padding: 2em 0 2em;
+    }  
+</style>
+</head>
+
+<body class="post-template tag-programming tag-python">
+
+	<nav id="menu">
+	<a class="close-button">Close</a>
+	<div class="nav-wrapper">
+		<p class="nav-label">Menu</p>
+		<ul>
+			<li class="nav-home" role="presentation"><a href="https://preslav.me/">Home</a></li>
+			<li class="nav-about" role="presentation"><a href="https://preslav.me/about-me/">About</a></li>
+			<li class="nav-munich-tech-community" role="presentation"><a href="https://preslav.me/aggregated-munich-tech-community/">Munich Tech Community</a></li>
+			<li class="nav-devnotes" role="presentation"><a href="https://devnotes.space">DevNotes</a></li>
+			<li class="nav-blogroll" role="presentation"><a href="https://preslav.me/blogroll/">Blogroll</a></li>
+			<li class="nav-contact" role="presentation"><a href="https://preslav.me/contact/">Contact</a></li>
+			<li class="nav-twitter"><a href="https://twitter.com/preslavrachev" title="@preslavrachev"><i class="ic ic-twitter"></i> Twitter</a></li>
+			<li class="nav-rss"><a href="https://preslav.me/rss/"><i class="ic ic-rss"></i> Subscribe</a></li>
+		</ul>
+	</div>
+</nav>
+
+
+	<section id="wrapper">
+		<a class="hidden-close"></a>
+		
+
+<div class="progress-container">
+	<span class="progress-bar"></span>
+</div>
+
+<header id="post-header" class="has-cover" >
+	<div class="inner">
+		<nav id="navigation">
+			<span id="home-button" class="nav-button">
+				<a class="home-button" href="https://preslav.me" title="Home"><i class="ic ic-arrow-left"></i> Home</a>
+			</span>
+			<span id="menu-button" class="nav-button">
+				<a class="menu-button"><i class="ic ic-menu"></i> Menu</a>
+			</span>
+		</nav>
+			<h1 class="post-title">Dependency Injection in Python: The Java Guy&#x27;s Perspective</h1>
+			<span class="post-meta"><a href="/about-me">Preslav Rachev</a> on <a href="/tag/programming/">Programming</a>, <a href="/tag/python/">Python</a> | <time datetime="2018-12-20">20 Dec 2018</time></span>
+				
+		<div class="post-cover cover" style="background-image: url('https://images.unsplash.com/photo-1467733238130-bb6846885316?ixlib&#x3D;rb-1.2.1&amp;q&#x3D;80&amp;fm&#x3D;jpg&amp;crop&#x3D;entropy&amp;cs&#x3D;tinysrgb&amp;w&#x3D;1080&amp;fit&#x3D;max&amp;ixid&#x3D;eyJhcHBfaWQiOjExNzczfQ');"></div>
+	</div>
+</header>
+
+<main class="content" role="main">
+	<article class="post tag-programming tag-python featured">
+		<div class="inner">
+
+			<section class="post-content">
+				<p>Dependency Injection (DI) in Python? Seriously? 🤔</p><p>At this point, I am expecting people to yell at me for thinking like a Java guy, but just bear with me for a moment, will you? <em>Spoiler:</em> I am going to mention Spring only once in this post, I promise.</p><small><b><i>NOTE:</i></b> If you are already familiar with Dependency Injection and want to see it in action, you might want to jump right to <a href="#a-more-complex-example">the example</a> at the end. Otherwise, keep reading. As always, feel free to send me a <a href="https://twitter.com/intent/tweet?text=%40preslavrachev%20%5BADD%20YOUR%20COMMENT%20HERE%5D&url=https://preslav.me/p/3c4daf3d-607c-49e4-8aa9-c87a61be1697/&related=preslavrachev">✏️comment on Twitter</a>. Your feedback is more than appreciated.</small>
+<p align="center">...</p><h2 id="let-s-get-things-straight">Let's Get Things Straight</h2><p>While I am definitely approaching Python software development from my close-to-a-decade  experience building Java software, I am not trying to preach to you a certain style of programming. Take this simply as a different perspective on things. The Python Universe is so immense that it will be a crime to pretend that DI is necessary for every Python project. While certain types of Python projects will definitely benefit from a bit more structure, for many others, DI might become the worst nightmare. I will try to write down my reasons, and leave the final decision to the reader.</p><h2 id="a-quick-detour-on-dependency-injection">A Quick Detour on Dependency Injection</h2><p>I will save you the lecture here. I am sure that many of you already know what DI is all about. Perhaps, some of you have already looked at, if not even read Martin Fowler's <a href="https://martinfowler.com/articles/injection.html">Dependency Injection essay</a>. Even if you haven't, don't panic. I will share you a secret, and that is, <strong>you already know DI, and have used it many times,</strong> even if you haven't used a particular name for it.</p><p>There is one golden prerequisite for Dependency Injection and that is, Separation of Concerns. Put simply, group logic in separable units, and let these units work together, without any of them knowing much about the implementation details of the other. OOP calls such units <em>classes</em>, and FP, <em>functions</em>. The point is, <em>units isolate common logic</em>. Let's add to this the requirement that no unit explicitly instantiates the units it works with (dependencies). Instead, dependencies are passed upon the unit (injected), usually, during its instantiation.</p><p>So, DI is a fancy term for instantiating classes in a top-level module, and passing them as initializer arguments to one another:</p><pre><code class="language-python">class Api:
+    def fetch_remote_data(self):
+        print('Api called')
+        return 42
+
+
+class BusinessLogic:
+    def __init__(self, api: Api):
+        self.api = api
+
+    def do_stuff(self):
+        api_result = self.api.fetch_remote_data()
+        print(f'the api returned a result: {api_result}')
+        # do something with the data and return a result
+
+# ---
+
+if __name__ == '__main__':
+    api = Api()
+    logic = BusinessLogic(api=api)
+
+    # ...
+    print(logic.do_stuff())
+
+</code></pre>
+<p>There are of course, more Pythonic ways of implementing Dependency Injection. I realize that the one I provided above is very Java-like. I have tried to collect a list of Python-related resources you might want to consult. You will find it at the end of this post.</p><h2 id="where-explicit-dependency-injection-might-help">Where Explicit Dependency Injection Might Help</h2><p>I already tried to make it clear that DI is not a silver bullet, and due to Python's versatility of use, it might not fit to every project. In some, it might even hamper the development of the project.</p><p>Python was created to give its developers the freedom to just do things, without sweating much about structure or ceremony, when those are not needed. This is why the Python ecosystem is perfect for scratching out ideas and prototyping, single-purpose CLI tools, or scripts with limited scope and lifetime.</p><p>Yet, for many of these projects, there comes a time, when they grow, or are bound to grow from the onset, and with this growth comes a different set of challenges. Where I see DI fit best, are projects with established requirements, serving a large number of stakeholders. The challenge here is to scale and constantly improve the system, without compromising its stability.</p><p><strong>Advantages</strong></p><p>Adding DI to your project will potentially</p><ul><li>increase its testability and reusability, because by design, it allows for easily replacing one component with another (great for mocking, or replacing one concrete implementation with another)</li><li>increase the readability. When applying DI your top-level model becomes sort of an orchestrator, instantiating your units and passing dependencies to them. Although this might add a bit of boilerplate, it helps ensure that all the LEGO-block wiring-up happens in one place, and this place will always be the starting point of your later investigations.</li><li>adds a certain level of common understanding between programmers of different backgrounds. While I am sure that many of you would come up with some more elegant and more Pythonic ways for solving the dependency issue, some of them might be too obscure for non-Python gurus (hi there 👋🏼) and lead to misunderstanding, lost communication, and potentially, compromising the resilience of the end product.</li></ul><p><strong>Disadvantages</strong></p><p>Well, the boilerplate and ceremony might be quite of an issue for some Python purists.</p><h2 id="a-more-complex-example">A More Complex Example</h2><p>I have already mentioned it a few times that doing all the instantiation and passing dependencies around by hand can be a bit tedious. It can also be complicated, because of the order of instantiation. The core dependencies must be instantiated first, the units that depend on them afterwards, and so on, until the top-level units, whose role is usually to coordinate the flow of data among their dependencies.</p><p>There are many Python libraries, which already facilitate this process. Among those, I looked at <a href="https://github.com/ets-labs/python-dependency-injector">python-dependency-injector</a>, <a href="https://github.com/suned/serum">serum</a>, and <a href="https://github.com/alecthomas/injector">injector</a>. I found <a href="https://github.com/alecthomas/injector">injector</a> to be closest to what I have come to know and use on Java - <a href="https://spring.io/">Spring</a> and <a href="https://github.com/google/guice">Guice</a>. It is not the least verbose, but it gets the job done. Let's see how it works:</p><pre><code class="language-bash">pip install injector
+</code></pre>
+<p>Let's take the two classes, I have created above:</p><pre><code class="language-python">class Api:
+    def fetch_remote_data(self):
+        print('Api called')
+        return 42
+
+
+class BusinessLogic:
+    def __init__(self, api: Api):
+        self.api = api
+
+    def do_stuff(self):
+        api_result = self.api.fetch_remote_data()
+        print(f'the api returned a result: {api_result}')
+        # do something with the data and return a result
+
+</code></pre>
+<p>The only modification I made, was adding an explicit <a href="https://www.python.org/dev/peps/pep-0484/">type hint</a> to the <code>Api</code> dependency. This will be used by the library to determine the right object to pass at instantiation.</p><p>Injector, similar to Guice and Spring, adds the concept of a dependency <code>Module</code>. This is a class that inherits from <code>injector.Module</code> and has a bunch of methods, each corresponding to the initialization of one dependency or the other:</p><pre><code class="language-python">class AppModule(Module):
+
+    @singleton
+    @provider
+    def provide_business_logic(self, api: Api) -&gt; BusinessLogic:
+        return BusinessLogic(api=api)
+
+    @singleton
+    @provider
+    def provide_api(self) -&gt; Api:
+        # there is no complex logic in our case,
+        # but you can use this method to hide the complexity of initial 
+        configuration
+        # e.g. when instantiating a particular DB connector.
+        return Api()
+</code></pre>
+<p>Each of these methods is decorated with <code>@provider</code> (required) and <code>@singleton</code> (optional, only if you want to ensure that the object instance will always remain the same). Pay attention to the use of type hinting here too. One the one hand, it makes the dependency module code more readable, on the other, it is used by the injector library to determine the right objects to return.</p><p>Let's see how to use our classes. We need to create an Injector and pass it an instance of our AppModule.</p><pre><code class="language-python">if __name__ == '__main__':
+    injector = Injector(AppModule())
+
+    logic = injector.get(BusinessLogic)
+    logic.do_stuff()
+</code></pre>
+<p>From now on, when you want to obtain an instance which is inside the dependency graph, from outside the graph, you would have to use the injector. Before you start grunting about the rising amount of boilerplate, let me point out that the actual places where you would need to do that, are either your app's main starting points, or API/Web endpoints in the context of a Web application. Actually, if you are building a Flask app, the creator of injector has got you covered. There is an extension for Flask, called <a href="https://github.com/alecthomas/flask_injector">flask-injector,</a> which hides the boilerplate of having to use the injector object directly.</p><p>Back to our injector instance. The real benefit of having dependency modules, is when you have several of them, for running your app in different contexts. The simplest example is testing. Let's create a version of our Api class for testing purposes:</p><pre><code class="language-python">class TestApi(Api):
+    def fetch_remote_data(self):
+        print('Demo Api called')
+        return 24
+</code></pre>
+<p>Assuming that there might be more classes we'd like to mock, we create a separate dependency module for them:</p><pre><code class="language-python">class TestAppModule(Module):
+
+    @singleton
+    @provider
+    def provide_api(self) -&gt; Api:
+        return TestApi()
+</code></pre>
+<p>The real magic happens when creating the injector. You can have as many injectors as you have, and each injector instance can be supplied with as many dependency module configurations as you wish:</p><pre><code class="language-python">if __name__ == '__main__':
+    real_injector = Injector(AppModule())
+    test_injector = Injector([AppModule(), TestAppModule()])
+
+    real_logic = real_injector.get(BusinessLogic)
+    real_logic.do_stuff()
+
+    test_logic = test_injector.get(BusinessLogic)
+    test_logic.do_stuff()
+</code></pre>
+<pre><code class="language-text">Api called
+the api returned a result: 42
+Demo Api called
+the api returned a result: 24
+</code></pre>
+<h2 id="the-end">The End</h2><p>I will stop here. I hope, if not really having managed to convince you, to have given you a slightly different perspective on things. Until next time!</p><hr><h2 id="related-resources">Related Resources</h2><ul><li><a href="https://martinfowler.com/articles/injection.html">Inversion of Control Containers and the Dependency Injection pattern</a></li><li><a href="https://medium.com/@suneandreasdybrodebel/pythonic-dependency-injection-a-practical-guide-83a1b1299280">Pythonic Dependency Injection: A Practical Guide - Sune Andreas Dybro Debel - Medium</a></li><li><a href="https://python-3-patterns-idioms-test.readthedocs.io/en/latest/index.html">Python 3 Patterns, Recipes and Idioms - Python 3 Patterns, Recipes and Idioms</a></li><li><a href="http://python-dependency-injector.ets-labs.org/introduction/di_in_python.html">Dependency injection and inversion of control in Python - Dependency Injector 3.14.2 documentation</a></li><li><a href="https://github.com/alecthomas/injector">alecthomas/injector</a></li><li><a href="https://github.com/suned/serum">suned/serum</a></li><li><a href="https://github.com/ets-labs/python-dependency-injector">ets-labs/python-dependency-injector</a></li><li><a href="https://github.com/RobertoPrevato/rodi">RobertoPrevato/rodi</a></li></ul>
+			</section>
+
+			<section class="post-info">
+
+				<div class="post-share">
+					<a class="twitter" href="https://twitter.com/share?text=Dependency Injection in Python: The Java Guy&#x27;s Perspective&url=https://preslav.me/2018/12/20/dependency-injection-in-python/" onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+						<i class="ic ic-twitter"></i><span class="hidden">Twitter</span>
+					</a>
+					<a class="facebook" href="https://www.facebook.com/sharer/sharer.php?u=https://preslav.me/2018/12/20/dependency-injection-in-python/" onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+						<i class="ic ic-facebook"></i><span class="hidden">Facebook</span>
+					</a>
+					<a class="googleplus" href="https://plus.google.com/share?url=https://preslav.me/2018/12/20/dependency-injection-in-python/" onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+						<i class="ic ic-googleplus"></i><span class="hidden">Google+</span>
+					</a>
+					<div class="clear"></div>
+				</div>
+
+				<aside class="post-tags">
+					<a href="/tag/programming/">Programming</a> <a href="/tag/python/">Python</a>
+				</aside>
+
+				<div class="clear"></div>
+						<aside class="post-author">
+							<figure class="post-author-avatar avatar">
+									<img src="/content/images/2018/12/3Uv6SjbG_400x400.jpg" alt="Preslav Rachev" />
+							</figure>
+							<div class="post-author-bio">
+								<h4 class="post-author-name"><a href="/author/preslav/">Preslav Rachev</a></h4>
+									<p class="post-author-about">I am a software engineer at KI labs GmbH and advocate for strong developer culture. In my free time, I enjoy running in the woods, reading a great book, or working on my next piece of writing/music.</p>
+								<style>
+									.bmc-button img {
+										width: 27px !important;
+										margin-bottom: 1px !important;
+										box-shadow: none !important;
+										border: none !important;
+										vertical-align: middle !important;
+									}
+								
+									.bmc-button {
+										line-height: 36px !important;
+										height: 37px !important;
+										text-decoration: none !important;
+										display: inline-flex !important;
+										color: #ffffff !important;
+										background-color: #FF813F !important;
+										border-radius: 3px !important;
+										border: 1px solid transparent !important;
+										padding: 1px 9px !important;
+										font-size: 22px !important;
+										letter-spacing: 0.6px !important;
+										box-shadow: 0px 1px 2px rgba(190, 190, 190, 0.5) !important;
+										-webkit-box-shadow: 0px 1px 2px 2px rgba(190, 190, 190, 0.5) !important;
+										margin: 0 auto !important;
+										font-family: 'Cookie', cursive !important;
+										-webkit-box-sizing: border-box !important;
+										box-sizing: border-box !important;
+										-o-transition: 0.3s all linear !important;
+										-webkit-transition: 0.3s all linear !important;
+										-moz-transition: 0.3s all linear !important;
+										-ms-transition: 0.3s all linear !important;
+										transition: 0.3s all linear !important;
+									}
+								
+									.bmc-button:hover,
+									.bmc-button:active,
+									.bmc-button:focus {
+										-webkit-box-shadow: 0px 1px 2px 2px rgba(190, 190, 190, 0.5) !important;
+										text-decoration: none !important;
+										box-shadow: 0px 1px 2px 2px rgba(190, 190, 190, 0.5) !important;
+										opacity: 0.85 !important;
+										color: #ffffff !important;
+									}
+								</style>
+								<link href="https://fonts.googleapis.com/css?family=Cookie" rel="stylesheet"><a class="bmc-button" target="_blank"
+									href="https://www.buymeacoffee.com/0B7zhlQ2I"><img src="https://www.buymeacoffee.com/assets/img/BMC-btn-logo.svg"
+										alt="Buy me a coffee"><span style="margin-left:5px; margin-top: 0px; margin-right: 0px; font-size: 1em">Buy me a coffee</span></a>
+								<br/>
+									<span class="post-author-location"><i class="ic ic-location"></i> Munich, Germany</span>
+								<div class="post-author-social">
+									<ul>
+										<li><a href="http://twitter.com/preslavrachev" class="smallsocial twitter" target="_blank"><i class="ic ic-twitter"></i></a></li>
+										<li><a href="http://github.com/preslavrachev" class="smallsocial github" target="_blank"><i class="fab fa-github"></i></a></li>
+										<li><a href="https://plus.google.com/+PreslavRachev" class="smallsocial googleplus" target="_blank"><i
+												 class="fab fa-google-plus"></i></a></li>
+										<li><a href="http://www.linkedin.com/in/preslavrachev" class="smallsocial linkedin" target="_blank"><i class="fab fa-linkedin"></i></a></li>
+										<li><a href="https://stackoverflow.com/users/1107412/preslav-rachev" class="smallsocial stackoverflow" target="_blank"><i
+												 class="fab fa-stack-overflow"></i></a></li>
+									</ul>
+								</div>
+							</div>
+							<div class="clear"></div>
+						</aside>
+			</section>
+
+
+			<section class="post-comments">
+				<script src="https://utteranc.es/client.js" 
+                        repo="preslavrachev/preslav.me-comments" 
+                        issue-term="pathname" 
+                        theme="github-light"
+                        crossorigin="anonymous" 
+                        async>
+                </script>
+			</section>
+
+			<aside class="post-nav">
+					<a class="post-nav-next" href="/2018/12/28/the-kotlin-way/">
+						<section class="post-nav-teaser">
+							<i class="ic ic-arrow-left"></i>
+								<h2 class="post-nav-title">How Much of &quot;The Kotlin Way&quot; Is the Right Way?</h2>
+								<p class="post-nav-excerpt">Is Kotlin chasing the footsteps of Scala? Does being Kotlin-first mean abandoning the foundations laid out by Java, and how much "idiomatic Kotlin" is too much? You decide.&hellip;</p>
+						</section>
+					</a>
+					<a class="post-nav-prev" href="/2018/12/13/git-tip-last-10-branches/">
+						<section class="post-nav-teaser">
+							<i class="ic ic-arrow-right"></i>
+								<h2 class="post-nav-title">Git Tip: List the Most Recent Branches You Have Been Working On</h2>
+								<p class="post-nav-excerpt">List and switch back and forth between multiple git branches with ease.&hellip;</p>
+						</section>
+					</a>
+				<div class="clear"></div>
+			</aside>
+		</div>
+	</article>
+</main>
+
+
+		<div id="body-class" style="display: none;" class="post-template tag-programming tag-python"></div>
+
+		<footer id="footer">
+			<div class="inner">
+				<section class="credits">
+					<span class="credits-theme">Theme <a href="https://github.com/zutrinken/attila">Attila</a> by <a href="https://zutrinken.com" rel="nofollow">zutrinken</a></span>
+					<span class="credits-software">Published with <a href="https://ghost.org">Ghost</a></span>
+				</section>
+			</div>
+		</footer>
+	</section>
+
+	<script type="text/javascript" src="/assets/js/script.js?v=7d79bd6108"></script>
+
+	<!-- Clicky Analytics -->
+<script>var clicky_site_ids = clicky_site_ids || []; clicky_site_ids.push(101131786);</script>
+<script async src="//static.getclicky.com/js"></script>
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-131031623-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-131031623-1');
+    
+  function handler() {
+        if (scroll_count === 200) {
+            document.removeEventListener('scroll', handler);
+            gtag('event', 'scroll', {
+  				'event_category' : 'behaviour',
+  				'event_label' : 'scroll'
+			});
+        } else {
+            scroll_count += 1;
+        }
+    }
+
+  scroll_count = 0;
+  document.addEventListener('scroll', handler)
+</script>
+
+<script>
+    window.cookieconsent.initialise({
+    container: document.getElementById("content"),
+    palette:{
+      popup: {background: "#fff"},
+      button: {background: "#26a8ed", text: "#fff"},
+    },
+    revokable:false,
+    onStatusChange: function(status) {
+      if (this.hasConsented()) {
+      	mixpanel.track("Accepts cookie consent");
+      }
+    },
+    law: {
+      regionalLaw: true,
+    },
+    location: true,
+    content: {
+    	message: "This blog uses cookies and collects limited analytics, to ensure you get the best reading experience."
+    },
+    position: "bottom-right"
+  });
+</script> 
+
+<script src="https://www.gitcdn.xyz/repo/alexritchey/Ghost-Archives/master/src/jquery.ghostArchives.js"></script>
+
+</body>
+</html>
