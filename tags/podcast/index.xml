@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>podcast on Preslav Rachev</title>
+    <link>https://preslav.me/tags/podcast/</link>
+    <description>Recent content in podcast on Preslav Rachev</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 26 Apr 2019 16:48:32 +0000</lastBuildDate>
+    
+	<atom:link href="https://preslav.me/tags/podcast/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title></title>
+      <link>https://preslav.me/microblog/201904261848/</link>
+      <pubDate>Fri, 26 Apr 2019 16:48:32 +0000</pubDate>
+      
+      <guid>https://preslav.me/microblog/201904261848/</guid>
+      <description> Ask the reader: This is a question for the avid podcast listeners among you. It will help me take a few decisions for a side project of mine. Your answers are completely anonymous.
+  (function() { var qs,js,q,s,d=document, gi=d.getElementById, ce=d.createElement, gt=d.getElementsByTagName, id=&#34;typef_orm&#34;, b=&#34;https://embed.typeform.com/&#34;; if(!gi.call(d,id)) { js=ce.call(d,&#34;script&#34;); js.id=id; js.src=b+&#34;embed.js&#34;; q=gt.call(d,&#34;script&#34;)[0]; q.parentNode.insertBefore(js,q) } })()  powered by Typeform  </description>
+    </item>
+    
+  </channel>
+</rss>

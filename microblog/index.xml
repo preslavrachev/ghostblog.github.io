@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Microblogs on Preslav Rachev</title>
+    <link>https://preslav.me/microblog/</link>
+    <description>Recent content in Microblogs on Preslav Rachev</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 03 May 2019 05:45:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://preslav.me/microblog/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title></title>
+      <link>https://preslav.me/microblog/220503190745/</link>
+      <pubDate>Fri, 03 May 2019 05:45:00 +0000</pubDate>
+      
+      <guid>https://preslav.me/microblog/220503190745/</guid>
+      <description>I caught myself using my old Android phone more and more these days. A 5-year-old Nexus 5, that is. I dug it out a few weeks ago. After the fresh reset all the service updates, it works as if it hasn’t been two years since I last used it for real. Trinkering with Android like in the good old days felt exciting. In comparison, my experience with iOS has always been like living a comfortable, but relatively boring life.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://preslav.me/microblog/201904261848/</link>
+      <pubDate>Fri, 26 Apr 2019 16:48:32 +0000</pubDate>
+      
+      <guid>https://preslav.me/microblog/201904261848/</guid>
+      <description> Ask the reader: This is a question for the avid podcast listeners among you. It will help me take a few decisions for a side project of mine. Your answers are completely anonymous.
+  (function() { var qs,js,q,s,d=document, gi=d.getElementById, ce=d.createElement, gt=d.getElementsByTagName, id=&#34;typef_orm&#34;, b=&#34;https://embed.typeform.com/&#34;; if(!gi.call(d,id)) { js=ce.call(d,&#34;script&#34;); js.id=id; js.src=b+&#34;embed.js&#34;; q=gt.call(d,&#34;script&#34;)[0]; q.parentNode.insertBefore(js,q) } })()  powered by Typeform  </description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://preslav.me/microblog/220420191020/</link>
+      <pubDate>Mon, 22 Apr 2019 10:20:00 +0000</pubDate>
+      
+      <guid>https://preslav.me/microblog/220420191020/</guid>
+      <description>Good morning from Augsburg, Germany 👋🏼 Not many people around (expected for the second day of Easter), but we got a beatufil sunshine and a great view.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://preslav.me/microblog/229c405a-737f-4509-8d0f-ebed00a44820/</link>
+      <pubDate>Fri, 22 Mar 2019 14:01:47 +0000</pubDate>
+      
+      <guid>https://preslav.me/microblog/229c405a-737f-4509-8d0f-ebed00a44820/</guid>
+      <description>Meanwhile in Munich&amp;hellip;</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://preslav.me/microblog/06482203-14be-4333-a9c1-398461d66c7c/</link>
+      <pubDate>Wed, 23 Jan 2019 06:57:00 +0000</pubDate>
+      
+      <guid>https://preslav.me/microblog/06482203-14be-4333-a9c1-398461d66c7c/</guid>
+      <description>A view to live for! 😍
+Sendlinger Tor | Munich</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>https://preslav.me/microblog/201905051824/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://preslav.me/microblog/201905051824/</guid>
+      <description>Test post</description>
+    </item>
+    
+  </channel>
+</rss>

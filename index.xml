@@ -1,0 +1,1341 @@
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>Preslav Rachev</title>
+    <link>https://preslav.me/</link>
+    <description>I am a software engineer fighting data science, a marathon-wannabe, a hobby musician, a voracious reader, and photographer. I mostly write about building a strong developer culture.</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 03 May 2019 05:45:00 +0000</lastBuildDate>
+    
+        <atom:link href="https://preslav.me/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Deploying a Native Go Binary on Heroku</title>
+      <link>https://preslav.me/2019/04/20/deploying-native-go-binary-on-heroku/</link>
+      <pubDate>Sat, 20 Apr 2019 07:30:04 +0000</pubDate>
+      
+      <guid>https://preslav.me/2019/04/20/deploying-native-go-binary-on-heroku/</guid>
+      <description>My company, KI labs recently held its first hackathon in our Munich office. My team and I went for a very cool mobile app idea that promotes healthy walking competitions among colleagues and friends. Though the app itself deserves a proper introduction, I will talk about it in a separate post. This time I will focus on one problem I experienced while working on the app&amp;rsquo;s backend part, written in Go.</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>
+
+&lt;p&gt;My company, &lt;a href=&#34;https://www.ki-labs.com/&#34;&gt;KI labs&lt;/a&gt; recently held its first hackathon in our Munich office. My team and I  went for a very cool mobile app idea that promotes healthy walking competitions among colleagues and friends. Though the app itself deserves a proper introduction, I will talk about it in a separate post. This time I will focus on one problem I experienced while working on the app&amp;rsquo;s backend part, written in Go.&lt;/p&gt;
+
+&lt;p&gt;The challenges with using the Go language aside, one unanticipated hurdle was actually getting the backend to run in Heroku. I know, I could have gone for a different solution, but my usual workflow is to deploy to Heroku, until the requirements push for an alternative approach. And Heroku already supports deploying Go applications. Or at least, that&amp;rsquo;s what the &lt;a href=&#34;https://www.heroku.com/go&#34;&gt;documentation&lt;/a&gt; says. And indeed, after the stress of the hackathon, I figured it out, but at the time, getting Heroku to build a Go application that uses modules seemed like it needed more time than we actually had.&lt;/p&gt;
+
+&lt;p&gt;Due to the limited time constraints, I decided to take a shortcut and use what has traditionally been one of the Go&amp;rsquo;s strongest selling points - creating a static binary and running it natively inside a VM or a container. But Heroku can&amp;rsquo;t run native apps directly, can it? Or at least, it won&amp;rsquo;t allow you to run those directly.&lt;/p&gt;
+
+&lt;h2 id=&#34;the-solution&#34;&gt;The Solution&lt;/h2&gt;
+
+&lt;p&gt;The trick is to make the installer think that it is going to use a certain &lt;a href=&#34;https://devcenter.heroku.com/articles/buildpacks&#34;&gt;Buildpack&lt;/a&gt;, but actually in your Procfile you override the control and execute a native binary directly.&lt;/p&gt;
+
+&lt;p&gt;Heroku uses certain triggers to initiate the start of an instance. For example, the presence of a &lt;code&gt;package.json&lt;/code&gt; file (Node.js) or &lt;code&gt;pom.xml&lt;/code&gt; / &lt;code&gt;build.gradle&lt;/code&gt; (Java), &lt;code&gt;requirements.txt&lt;/code&gt; / &lt;code&gt;setup.py&lt;/code&gt; (Python), etc.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;GOOS&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;linux go build server.go&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;For our needs, we might as well hijack the &lt;a href=&#34;https://github.com/heroku/heroku-buildpack-nodejs&#34;&gt;Node.js Buildpack&lt;/a&gt;. This is relatively simple. In order to trick Heroku, all we need is a &lt;code&gt;package.json&lt;/code&gt; file, which lists a few basic properties needed for the Buildpack initialization:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-json&#34; data-lang=&#34;json&#34;&gt;{ &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;name&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;appname&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;version&amp;#34;&lt;/span&gt;: &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;0.0.1&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#f92672&#34;&gt;&amp;#34;dependencies&amp;#34;&lt;/span&gt;: {} }&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;With the &lt;code&gt;package.json&lt;/code&gt; file in place, we need a simple &lt;code&gt;Procfile&lt;/code&gt;, which will tell Heroku what to execute once the Buildpack initialization has finiehsed. In our case, this will be the already compiled Go executable:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-yaml&#34; data-lang=&#34;yaml&#34;&gt;web: ./main $PORT&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;A minor disadvantage of this approach is that we need to check the compiled binary into our git repository. I would do this on a separate branch, which I would try not to merge back to master and delete as soon as no longer necessary. By default, Heroku would use the &lt;code&gt;master&lt;/code&gt; branch when buiding an application, so we need to be assertive when pushing our special deployment branch:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;git push heroku my-deployment-branch:master
+&lt;span style=&#34;color:#75715e&#34;&gt;# tell Heroku to use my deployment branch as its `master`&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;That&amp;rsquo;s it! If fyour application is built using a technology that Heroku might not be actively supporting, or you are in for an extra performance boost (e.g. using Swift, Rust, C, etc) this tip might help you.&lt;/p&gt;
+
+&lt;h1 id=&#34;related-resources&#34;&gt;Related Resources&lt;/h1&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;http://blog.jan-ahrens.eu/2014/06/17/heroku-with-c.html&#34;&gt;Heroku with C&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/heroku/heroku-buildpack-go&#34;&gt;heroku/heroku-buildpack-go: Heroku Go Buildpack&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/heroku/go-getting-started&#34;&gt;heroku/go-getting-started: Getting Started with Go on Heroku https://devcenter.heroku.com/articles/getting-started-with-go&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://devcenter.heroku.com/articles/go-support&#34;&gt;Heroku Go Support | Heroku Dev Center&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://www.heroku.com/go&#34;&gt;Deploy, manage, scale Go apps in the cloud | Heroku&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+></content:encoded>
+      
+    </item>
+    
+    <item>
+      <title>Using Ephemeral Docker Containers as CLI Applications</title>
+      <link>https://preslav.me/2019/03/18/using-ephemeral-docker-containers-as-cli-applications/</link>
+      <pubDate>Mon, 18 Mar 2019 06:30:04 +0000</pubDate>
+      
+      <guid>https://preslav.me/2019/03/18/using-ephemeral-docker-containers-as-cli-applications/</guid>
+      <description>Docker containers have proven themselves extremely useful in allowing developers to sandbox environments and ease the deployment of services. Have a complicated service setup? No worries. Simply, describe the steps in a Dockerfile and you should be able to replicate the process on every host OS that has Docker support.
+When I said services, I bet that the first thing you thought about was HTTP servers, or some sort of persistent, always running processes that send or accept requests to such services.</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>
+
+&lt;p&gt;Docker containers have proven themselves extremely useful in allowing developers to sandbox environments and ease the deployment of services. Have a complicated service setup? No worries. Simply, describe the steps in a &lt;code&gt;Dockerfile&lt;/code&gt; and you should be able to replicate the process on every host OS that has Docker support.&lt;/p&gt;
+
+&lt;p&gt;When I said services, I bet that the first thing you thought about was HTTP servers, or some sort of persistent, always running processes that send or accept requests to such services. While the majority of Docker use cases fit exactly into this scenario, the realm of possible applications it offers, far exceeds that.&lt;/p&gt;
+
+&lt;p&gt;One such application is the use of Docker containers to sandbox the complex inner workings of a command-line (CLI) application. Most data projects involve the running of scheduled scripts which access remote services, do data processing and eventually, write the results either to disk, or to dedicated data storage. Such scripts have required dependencies, and often, the dependencies of one may collide with the ones required by another, which ends up in a big mess. This is the primary reason, why things like virtual environments in Python or Node.js&amp;rsquo; notorious &lt;code&gt;node_modules&lt;/code&gt; folder exist in the first place. Yet, we all know one or two about &lt;code&gt;node_modules&lt;/code&gt;&amp;hellip;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://hackernoon.com/circleci-performance-difference-between-cache-and-workspace-5567679c3601&#34;&gt;&lt;img src=&#34;https://proxy.duckduckgo.com/iu/?u=https%3A%2F%2Fcdn-images-1.medium.com%2Fmax%2F1600%2F0*i5S2tUk0CQBh1Euc.&amp;amp;f=1&#34; alt=&#34;&#34; /&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;The ideal case for such applications would be statically-bound executable files containing everything needed, and running into their own dedicated processes. One such approach is championed by languages like Go, Swift, and Kotlin&amp;rsquo;s Native option (and of course, good old C/C++). Others, like Java (fat Jars) and Python (wheels) offer a somewhat reasonable compromise by putting the code and every dependency into a single deployable artifact. I call this a compromise, because it still requires the presence of either JDK or a Python runtime on the host OS.&lt;/p&gt;
+
+&lt;p&gt;The majority of the time however, we won&amp;rsquo;t have the opportunity to deploy everything into a single executable. Much of the time, we also won&amp;rsquo;t have the freedom to install different runtimes globally. In such cases, baking a CLI application together with all of its dependencies into a dedicated Docker image can be a good option. Let&amp;rsquo;s try a simple example:&lt;/p&gt;
+
+&lt;h2 id=&#34;an-example&#34;&gt;An Example&lt;/h2&gt;
+
+&lt;p&gt;Here is a simple Python script, which will fetch the current price of Bitcoin, and convert it to a desired fiat currency of our choice (&amp;ldquo;USD&amp;rdquo;, &amp;ldquo;EUR&amp;rdquo;).&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; argparse
+&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; requests
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;fetch&lt;/span&gt;(currency):
+    price &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; requests&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;get(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;https://api.coindesk.com/v1/bpi/currentprice.json&amp;#34;&lt;/span&gt;)&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;json()[&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;bpi&amp;#34;&lt;/span&gt;][currency][&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;rate_float&amp;#34;&lt;/span&gt;]
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(price)
+
+parser &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; argparse&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;ArgumentParser(description&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;My Fancy CLI&amp;#34;&lt;/span&gt;)
+parser&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;add_argument(
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;--currency&amp;#39;&lt;/span&gt;,
+    help&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Choose currency to convert to&amp;#39;&lt;/span&gt;,
+)
+args &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; parser&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;parse_args()
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;__main__&amp;#34;&lt;/span&gt;:
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(args)
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; args&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;currency:
+        fetch(args&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;currency)
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;else&lt;/span&gt;:
+        parser&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;print_help()&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;There are two things to keep a note on, in this example. First, is the use of &lt;code&gt;requests&lt;/code&gt;, a popular HTTP request/response library, but not a part of the Python standard library, so it has to be installed separately. Second, is the use of command-line arguments, namely &lt;code&gt;--currency&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Next, is the &lt;code&gt;Dockerfile&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-Dockerfile&#34; data-lang=&#34;Dockerfile&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;FROM&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; python:3.7&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;RUN&lt;/span&gt; pip install requests&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;COPY script.py .&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;
+&lt;/span&gt;&lt;span style=&#34;color:#960050;background-color:#1e0010&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;ENTRYPOINT&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt; [&amp;#34;python&amp;#34;, &amp;#34;script.py&amp;#34;]&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Again, very simple. In light of keeping the example simple, we will install &lt;code&gt;requests&lt;/code&gt; right in the &lt;code&gt;Dockerfile&lt;/code&gt; and using a &lt;code&gt;requirements.txt&lt;/code&gt; file or some kind of a setup script, which are the common practice.&lt;/p&gt;
+
+&lt;p&gt;Let&amp;rsquo;s build the image, assuming that both files are in our current directory:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;docker build -t my-command .&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Great, now we can grab our newly baked image and run it:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;docker run --rm -it my-command --currency USD&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The &lt;code&gt;--rm&lt;/code&gt; option will remove the container immediately after the command has been executed. If you have ever ran &lt;code&gt;docker ps -a&lt;/code&gt;, you would know that inactive containers do not get deleted immediately, but are left for a possible later restart. Assuming that we would like to run our command multiple times per day, this will result in lots of wasted resources.&lt;/p&gt;
+
+&lt;p&gt;The other interesting option is &lt;code&gt;-i&lt;/code&gt;. This one, combined with the fact that we chose &lt;code&gt;ENTRYPOINT&lt;/code&gt; instead of &lt;code&gt;CMD&lt;/code&gt; for our starting point in the &lt;code&gt;Dockerfile&lt;/code&gt; would allow us to pass the &lt;code&gt;--currency&lt;/code&gt; argument at the very end. There are a few subtle differences between &lt;code&gt;ENTRYPOINT&lt;/code&gt; and &lt;code&gt;CMD&lt;/code&gt; but the very basic is the ability to adapt &lt;code&gt;ENTRYPOINT&lt;/code&gt;, while &lt;code&gt;CMD&lt;/code&gt; is more or less final.&lt;/p&gt;
+
+&lt;p&gt;You can, of course, create an alias fo your command to make the execution easier:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;alias my-cmd&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;docker run --rm -i my-command&amp;#34;&lt;/span&gt;
+
+my-cmd --currency USD&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;That&amp;rsquo;s it! Now you can ahead and run your application as a scheduled cron task and e.g. accrue data over time:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;*/10 * * * * user ./my-cmd --currency USD &amp;gt;&amp;gt; prices.csv&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id=&#34;limitations&#34;&gt;Limitations&lt;/h2&gt;
+
+&lt;p&gt;Once again, the solution is far from the ease of a drag-and-drop that Go executables allow. Also, it assumes a working Docker setup (less and less of an issue nowadays), and quite a bit of space, because of the images. It also, for the most part, requires building the image locally, or at least, pulling the ingredients from an image registry. Docker allows for an option to save an image with all of its dependencies and load it on a remote host OS. Think of it as a sort of fat-Jar. I tried it just for the sake of demonstration, but it seems very impractical, as it resulted in an enormous zip file for that tiny Python script (of course, it bakes a whole Linux bistro inside):&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;docker save -o my-command.zip my-command&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;rw------- &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt; user user 920M Mar &lt;span style=&#34;color:#ae81ff&#34;&gt;17&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;08&lt;/span&gt;:47 my-command.zip&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;></content:encoded>
+      
+      <media:content url="https://images.unsplash.com/photo-1494412651409-8963ce7935a7?ixlib=rb-1.2.1&amp;q=80&amp;fm=jpg&amp;crop=entropy&amp;cs=tinysrgb&amp;w=1080&amp;fit=max&amp;ixid=eyJhcHBfaWQiOjExNzczfQ" medium="image"/>
+      
+    </item>
+    
+    <item>
+      <title>Kotlin ❤️ Data Science? (Part 1)</title>
+      <link>https://preslav.me/2019/02/03/kotlin-loves-data-science/</link>
+      <pubDate>Sun, 03 Feb 2019 14:29:06 +0000</pubDate>
+      
+      <guid>https://preslav.me/2019/02/03/kotlin-loves-data-science/</guid>
+      <description>A few days ago, I was invited to give a talk at the Munich Kotlin Users Group meetup (check out my slides here) For quite some time, I have had an idea to promote Kotlin as the missing link between software engineering and Data Science. DuringKotlinConf 2018, I had the chance and the privilege to meet a couple of amazing people, whose talks only helped confirm my thoughts.
+   Mathematical Modeling with Kotlin | Thomas Nield</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>
+
+&lt;p&gt;A few days ago, I was invited to give a talk at the &lt;a href=&#34;https://www.meetup.com/Kotlin-User-Group-Munich/events/257927489/&#34;&gt;Munich Kotlin Users Group&lt;/a&gt; meetup (check out my slides &lt;a href=&#34;https://speakerdeck.com/preslavrachev/kotlin-data-science&#34;&gt;here&lt;/a&gt;) For quite some time, I have had an idea to promote Kotlin as the missing link between software engineering and Data Science. During&lt;a href=&#34;https://preslav.me/2018/11/01/kotlinconf-2018-recap/&#34;&gt; KotlinConf 2018&lt;/a&gt;, I had the chance and the privilege to meet a couple of amazing people, whose talks only helped confirm my thoughts.&lt;/p&gt;
+
+&lt;p&gt;
+&lt;div style=&#34;position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;&#34;&gt;
+  &lt;iframe src=&#34;//www.youtube.com/embed/-zTqtEcnM7A&#34; style=&#34;position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;&#34; allowfullscreen title=&#34;YouTube Video&#34;&gt;&lt;/iframe&gt;
+&lt;/div&gt;
+
+&lt;a href=&#34;https://youtu.be/-zTqtEcnM7A&#34;&gt;Mathematical Modeling with Kotlin | Thomas Nield&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;
+&lt;div style=&#34;position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;&#34;&gt;
+  &lt;iframe src=&#34;//www.youtube.com/embed/yjVW6uCmVBA&#34; style=&#34;position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;&#34; allowfullscreen title=&#34;YouTube Video&#34;&gt;&lt;/iframe&gt;
+&lt;/div&gt;
+
+&lt;a href=&#34;https://www.youtube.com/watch?v=yjVW6uCmVBA&#34;&gt;Building Data Science Workflows with Kotlin | Holger Brandl&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Indeed, the future seems full of opportunities for Kotlin, but not before JetBrains and the developer community remove a few of the pending roadblocks.&lt;/p&gt;
+
+&lt;p&gt;The following article is the first part of a two-part series based on my talk. After the meetup, I realized that the topic is far deeper than just going through a few slides about what Kotlin as a language can and can’t. Therefore, I decided to properly introduce the reader to the topic first. Next time, we will talk about where and how Kotlin can fit into the puzzle.&lt;/p&gt;
+
+&lt;h1 id=&#34;the-problem-with-data&#34;&gt;The Problem with Data&lt;/h1&gt;
+
+&lt;p&gt;We live in an age of unprecedented data abundance. So much, that our wishful imagination is easy to make us believe that we are on the verge of getting computers to think. Not surprisingly, when speaking about the future, the use of the term “AI” has recently become a favorite topic among company management and technology media alike.&lt;/p&gt;
+
+&lt;p&gt;Yet, in reality, we are only touching the surface. The path towards autonomous AI requires more basic human intervention than anything else. In particular, it needs a way for properly communicating data science into the software engineering field, and vice versa.&lt;/p&gt;
+
+&lt;p&gt;Aren’t We Already There?
+Nope, not quite. Bringing data science into the production workflow of established companies is not as easy as one might think. More so, when talking about the JVM, which a vast majority of enterprise software has been built upon.&lt;/p&gt;
+
+&lt;p&gt;See, there is a mismatch between software engineering and data science practices:&lt;/p&gt;
+
+&lt;p&gt;Software engineering works best when building well-defined systems. Requirements are set at the beginning and ideally, evolve over time, but rarely change entirely. There are traceable boundaries between components, with deterministic inputs and outputs, to help testability and ease extension. Like other forms of engineering, building a piece of software starts with a rough skeleton, which gets iterated over time and again. The goal of every step is to make the software either more feature complete or gradually morph it into a new direction, but keep it compatible with the original requirements.&lt;/p&gt;
+
+&lt;p&gt;Data science, on the other hand, deals with supporting or refuting hypotheses. Like other fields of science, it starts with a relatively generic question and goes through a process of data exploration and validation, until either the question can be answered fully, or it needs to be formulated again, due to an insufficiency of the data/selected approach. The exploration phase often involves trying out different approaches and seeing a large portion of them fail. This is why it is so important for the data science field to use tools and technologies that allow for easy exploration and visualization of the underlying data.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://cdn-images-1.medium.com/max/800/0*_At3wUK_Zqgz_goL.png&#34; alt=&#34;&#34; /&gt;
+&lt;a href=&#34;https://www.xkcd.com/1838/&#34;&gt;Machine Learning | xkcd&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Another important difference between software engineering and data science is the interpretation of the outputs of systems at hand. Although, the understanding of distributed systems has almost become a science of its own, interpreting the outcome of a non-deterministic machine learning model is a whole different game. It is not easy to unit-test complex ML models, mainly because of the level of randomness they are built upon. Removing this randomness factor can help test the model in isolation, but might also provide the wrong assumptions when feeding the model with real-world data. Just like with the exploration phase above, it is a matter of having the right tools at hand and a fairly deep level of human interpretation.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://cdn-images-1.medium.com/max/800/0*ihz1vmQr7OcBTVx4.png&#34; alt=&#34;&#34; /&gt;
+&lt;a href=&#34;https://xkcd.com/605/&#34;&gt;Extrapolating | xkcd&lt;/a&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;ai-ml-and-the-role-of-data-science-in-all-of-this&#34;&gt;AI, ML, and the Role of Data Science in All of This&lt;/h1&gt;
+
+&lt;p&gt;So, we are back to our favorite term: Artificial Intelligence, also known as AI. AI has had a long history of ups and downs, most notably its birth and early progress during the 1950s and 1960s, followed by the so-called AI winter covering most of the late 1980s, 1990s, and the beginning of the 21st Century. The recent advancement of hardware technology has given researchers the opportunity to dig out the old papers, beat them off the dust, and re-imagine the utopian bright future, in which humans and machines become alike.&lt;/p&gt;
+
+&lt;p&gt;The fields of AI and Data Science have been complementing one another for a long time. Yet, while AI still seems rather ephemeral and difficult to grasp (a bit like Virtual Reality), Data Science resembles Augmented Reality, in that it employs technology, but leaves the ultimate decision and interpretation to humans.&lt;/p&gt;
+
+&lt;p&gt;Machine Learning (or ML, for short) is just one of the techniques that both rely on, in order to make machines reason about large amounts of data, but by far not the only one.&lt;/p&gt;
+
+&lt;p&gt;If you are looking for a more cynical view of the difference between the three you can rather use this one:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;AI is what brings the VC Money in.&lt;/li&gt;
+&lt;li&gt;ML (a.k.a sophisticated brute-force) is what gets the job done. ML models are very limited to a given domain.&lt;/li&gt;
+&lt;li&gt;DS is the craft of finding which ML model works for a particular case, and which doesn’t.
+&lt;br /&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Until next time, when I will talk more about whether Kotlin can help fill the gap between Software Engineering and Data Science, as well as what steps are still needed to help us get there.&lt;/p&gt;
+
+&lt;h1 id=&#34;further-resources&#34;&gt;Further Resources&lt;/h1&gt;
+
+&lt;p&gt;The slides to my talk
+&lt;script async class=&#34;speakerdeck-embed&#34; data-id=&#34;99478ac60b134f5393f45d382b1d1bc6&#34; data-ratio=&#34;1.77777777777778&#34; src=&#34;//speakerdeck.com/assets/embed.js&#34;&gt;&lt;/script&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;http://approximatelycorrect.com/2017/03/28/the-ai-misinformation-epidemic/&#34;&gt;The AI Misinformation Epidemic&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://blogs.nvidia.com/blog/2016/07/29/whats-difference-artificial-intelligence-machine-learning-deep-learning-ai/&#34;&gt;What’s the Difference Between Artificial Intelligence, Machine Learning, and Deep Learning?&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://towardsdatascience.com/data-science-has-become-too-vague-538899bab57&#34;&gt;Data Science Has Become Too Vague&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://towardsdatascience.com/deep-misconceptions-about-deep-learning-f26c41faceec&#34;&gt;Deep Misconceptions About Deep Learning&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://stats.stackexchange.com/questions/423/what-is-your-favorite-data-analysis-cartoon/9254&#34;&gt;What is your favorite “data analysis” cartoon?&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+></content:encoded>
+      
+    </item>
+    
+    <item>
+      <title>Use Dotenv Files When Developing Your Python Apps</title>
+      <link>https://preslav.me/2019/01/09/dotenv-files-python/</link>
+      <pubDate>Wed, 09 Jan 2019 06:28:16 +0000</pubDate>
+      
+      <guid>https://preslav.me/2019/01/09/dotenv-files-python/</guid>
+      <description>Hard-coding configuration is bad. This is one of the things that newbie programmers learn quickly after they realize that have committed sensitive information to a public GitHub repository. And it happens so easily. Often, you are in the spur of the moment, wanting to test something locally, when you figure out that you need some API key in order for your app to work. Adding the key to the code takes a second, and is just as easy to forget when committing.</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>
+
+&lt;p&gt;Hard-coding configuration is bad. This is one of the things that newbie programmers learn quickly after they realize that have committed sensitive information to a public GitHub repository. And it happens so easily. Often, you are in the spur of the moment, wanting to test something locally, when you figure out that you need some API key in order for your app to work. Adding the key to the code takes a second, and is just as easy to forget when committing. The &lt;a href=&#34;https://12factor.net/&#34;&gt;Twelve-Factor-App&lt;/a&gt; methodology calls this a &lt;em&gt;violation&lt;/em&gt;, and has whole &lt;a href=&#34;https://12factor.net/config&#34;&gt;section&lt;/a&gt; on why should be externalized and read from the environment at runtime.&lt;/p&gt;
+
+&lt;p&gt;I used to avoid using environment variables, because they made it hard to set up a local environment for testing. I’d either pass all the assignments at the start, or use a cumbersome startup script to export them to the current shell.&lt;/p&gt;
+
+&lt;p&gt;Luckily, it is easy to improve the quality of your code, and ease testing in different environments at the same time. It has become somewhat of a standard practice to use &lt;code&gt;.env&lt;/code&gt; (a.k.a dotenv) files for configuring sensitive data while testing across environments. A &lt;em&gt;dotenv&lt;/em&gt; file contains nothing more than text, where  it has one environment variable assignment per line:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;ABC_KEY&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;1234xyz
+DEF_KEY&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#ae81ff&#34;&gt;2349875&lt;/span&gt;
+DEBUG&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;True&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;NOTE&lt;/strong&gt;: &lt;em&gt;Dotenv&lt;/em&gt; files &lt;strong&gt;must be ignored&lt;/strong&gt; from version control for exactly the same reason mentioned at the beginning of this post: exposing sensitive information as part of the project is bad. These files are only used to quickly set up or change an environment when needed.&lt;/p&gt;
+
+&lt;h2 id=&#34;using-a-dotenv-file-in-our-app&#34;&gt;Using a dotenv file in our app&lt;/h2&gt;
+
+&lt;p&gt;How do we get our Python app to read a &lt;code&gt;.env&lt;/code&gt; file? &lt;a href=&#34;https://pypi.org/project/python-dotenv/&#34;&gt;python-dotenv&lt;/a&gt; is a great Python package that does exactly that. It will search for a &lt;code&gt;.env&lt;/code&gt; as part of the project, and if it finds one, will expose the variables in it to the app. All you need to do, is &lt;code&gt;pip install python-dotenv&lt;/code&gt; and add the following couple of lines at the start of your project:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; dotenv &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; load_dotenv
+load_dotenv()&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The starting point may vary, depending on whether your project is a command line script, a Flask, or a Django project. For instance, in a Django project, the above two lines need to be added at the top of the &lt;code&gt;settings.py&lt;/code&gt; file.&lt;/p&gt;
+
+&lt;p&gt;Having set &lt;code&gt;python-loadenv&lt;/code&gt; up, the rest is easy. Create a &lt;code&gt;.env&lt;/code&gt; file at the root of your app with all the environment variables needed to configure it, and make sure that you invoke them properly from your code (e.g. use something like &lt;code&gt;os.getenv(&#39;MY_API_KEY&#39;)&lt;/code&gt;). Don’t forget to exclude the &lt;code&gt;.env&lt;/code&gt; file from being checked into your source code repository!&lt;/p&gt;
+
+&lt;h2 id=&#34;links&#34;&gt;Links&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://pypi.org/project/python-dotenv/&#34;&gt;python-dotenv · PyPI&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://12factor.net/&#34;&gt;http://12factor.net/&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+></content:encoded>
+      
+    </item>
+    
+    <item>
+      <title>What I learned in 2018</title>
+      <link>https://preslav.me/2018/12/31/what-i-learned-in-2018/</link>
+      <pubDate>Mon, 31 Dec 2018 16:51:09 +0000</pubDate>
+      
+      <guid>https://preslav.me/2018/12/31/what-i-learned-in-2018/</guid>
+      <description>It&amp;rsquo;s that time of the year again. The time when you make yourself a cup of coffee, and go through the events of the past years, searching for a sign that it has been worth it. And judging by the numbers alone, it seems like a very eventful year:
+In 2018, I:
+ Got engaged Changed my job Started new new side projects Attended 4 conferences and countless meetups Had my own chance to present in front of an audience (twice) Visited 5 countries and met many new people Read 15 books Wrote nearly 30 blog posts Ran 626 km, and finished 4 half-marathons Made between 5,500 and 6,000 push-ups  Wow, quite a year, heh?</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>&lt;p&gt;It&amp;rsquo;s that time of the year again. The time when you make yourself a cup of coffee, and go through the events of the past years, searching for a sign that it has been worth it. And judging by the numbers alone, it seems like a very eventful year:&lt;/p&gt;
+
+&lt;p&gt;In 2018, I:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Got engaged&lt;/li&gt;
+&lt;li&gt;Changed my job&lt;/li&gt;
+&lt;li&gt;Started new new side projects&lt;/li&gt;
+&lt;li&gt;Attended 4 conferences and countless meetups&lt;/li&gt;
+&lt;li&gt;Had my own chance to present in front of an audience (twice)&lt;/li&gt;
+&lt;li&gt;Visited 5 countries and met many new people&lt;/li&gt;
+&lt;li&gt;Read 15 books&lt;/li&gt;
+&lt;li&gt;Wrote nearly 30 blog posts&lt;/li&gt;
+&lt;li&gt;Ran 626 km, and finished 4 half-marathons&lt;/li&gt;
+&lt;li&gt;Made between 5,500 and 6,000 push-ups&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Wow, quite a year, heh?In reality, these numbers would mean nothing, if it weren&amp;rsquo;t for the things I learned in between. I am one of the people who believe that goals are not destinations, but guiding posts. To me it&amp;rsquo;s the journey that matters. For instance, the fact that I finished 15 books this year wouldn&amp;rsquo;t matter, if I cannot remember even a single quote to keep in my mind for the rest of my life. Same with running. It&amp;rsquo;s not the number of half marathons I ran throughout this year, but about the transformation my body and mind underwent every time - anxiety, exhaustion, acceptance, relief, exhilaration.&lt;/p&gt;
+
+&lt;p&gt;So let&amp;rsquo;s see what I learned this year:&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;I learned to embrace the unknown&lt;/strong&gt;, get out of my comfort zone, and jump into unknown waters. I was reluctant to leave the safety of my old job, but in retrospect, it seems like I have really missed a gulp of fresh air.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;I learned that patience and persistence matter&lt;/strong&gt;. When you look at the numbers above, every single one of them alone, would seem insurmountable, if you push yourself to achieve it once. But I did everything stepwise, one tiny bit at a time, day after day. Doing things this way is harder, because it requires a lot of motivation, but it certainly has a more long-lasting effect at the end.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;learned that people are different&lt;/strong&gt;, and what worked for me, may not work for others. In fact, it will &lt;strong&gt;most probably not work for others&lt;/strong&gt;. You cannot take people by the hand and show them the right way, because you don&amp;rsquo;t know the right way for others. What you can and definitely should do, is encourage them to find it for themselves.&lt;/p&gt;
+
+&lt;p&gt;As a direct consequence of the above, &lt;strong&gt;I learned to listen more&lt;/strong&gt;. Normally, I am the type of person who won&amp;rsquo;t start a conversation, but once I feel comfortable enough, I won&amp;rsquo;t stop talking. Sometimes too much. Talking is good, but being a good listener is a way more appreciated.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;I learned that being having an introverted personality is unlike what society tells us, but a hidden gem in disguise&lt;/strong&gt;. Previously, I thought that it is some kind of a disadvantage that I need to cure myself from. So, I thought that becoming a sports person and an active community persona, would help me &amp;ldquo;get cured&amp;rdquo;. In fact, I had to try everything to come to the realization that this is not something people need to cure themselves from, but a unique gift that they should embrace. The ability to observe the surrounding environment with the focus of an introvert, or be able to go deep in the flow when solving a problem or mastering a skill, is something you shouldn&amp;rsquo;t be ashamed of, but actively go after. If I could do something for the community in 2019, it would be to meet more and more introverted people, and share my discoveries with them.&lt;/p&gt;
+
+&lt;p&gt;Last but not least, &lt;strong&gt;I realized how much I really, really love writing&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;When I look back, it seems like 2018 was a great year indeed. Looking forward to an amazing 2019! My best wishes for a wonderful new year!&lt;/p&gt;
+></content:encoded>
+      
+      <media:content url="https://images.unsplash.com/photo-1453475250267-163ff185e88e?ixlib=rb-1.2.1&amp;q=80&amp;fm=jpg&amp;crop=entropy&amp;cs=tinysrgb&amp;w=1080&amp;fit=max&amp;ixid=eyJhcHBfaWQiOjExNzczfQ" medium="image"/>
+      
+    </item>
+    
+    <item>
+      <title>Connecting to a MongoDB Instance Using KMongo</title>
+      <link>https://preslav.me/2018/12/28/mongodb-kmongo-connection-string/</link>
+      <pubDate>Fri, 28 Dec 2018 16:45:41 +0000</pubDate>
+      
+      <guid>https://preslav.me/2018/12/28/mongodb-kmongo-connection-string/</guid>
+      <description>Often, the seemingly simple things can make you spend hours chasing around your tail. Like trying to connect to a MongoDB instance using KMongo.
+Basically, if you have checked out the KMongo quick start, setting up a client and fetching some data should be extremely easy:
+val client = KMongo.createClient() //get com.mongodb.MongoClient new instance val database = client.getDatabase(&amp;#34;test&amp;#34;) //normal java driver usage val col = database.getCollection&amp;lt;Jedi&amp;gt;() //KMongo extension method The quick start tutorial assumes that your DB resides on mongodb://localhost:27017, but in reality, your MongoDB connection string looks more like this:</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>
+
+&lt;p&gt;Often, the seemingly simple things can make you spend hours chasing around your tail. Like trying to connect to a MongoDB instance using &lt;a href=&#34;https://litote.org/kmongo/quick-start/&#34;&gt;KMongo&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Basically, if you have checked out the KMongo &lt;a href=&#34;https://litote.org/kmongo/quick-start/&#34;&gt;quick start&lt;/a&gt;, setting up a client and fetching some data should be extremely easy:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-kotlin&#34; data-lang=&#34;kotlin&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;val&lt;/span&gt; client = KMongo.createClient() &lt;span style=&#34;color:#75715e&#34;&gt;//get com.mongodb.MongoClient new instance
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;val&lt;/span&gt; database = client.getDatabase(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;test&amp;#34;&lt;/span&gt;) &lt;span style=&#34;color:#75715e&#34;&gt;//normal java driver usage
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;val&lt;/span&gt; col = database.getCollection&amp;lt;Jedi&amp;gt;() &lt;span style=&#34;color:#75715e&#34;&gt;//KMongo extension method&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The quick start tutorial assumes that your DB resides on &lt;code&gt;mongodb://localhost:27017&lt;/code&gt;, but in reality, your MongoDB connection string looks more like this:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;mongodb://&amp;lt;USERNAME&amp;gt;:&amp;lt;PASSWORD&amp;gt;@&amp;lt;HOST&amp;gt;:&amp;lt;PORT&amp;gt;/&amp;lt;DATABASE&amp;gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and in proper production environments, it is unknown until runtime. Let&amp;rsquo;s assume that it was passed to the running application as an environment variable, e.g. &lt;code&gt;MONGODB&lt;/code&gt;. Simply passing this string to &lt;code&gt;KMongo.createClient()&lt;/code&gt;won&amp;rsquo;t do it. The problem is that KMongo assumes that this string is simply the &lt;code&gt;&amp;lt;HOST&amp;gt;&lt;/code&gt; part and creates a &lt;code&gt;ServerAddress&lt;/code&gt;out of it. This results in an error when connecting.&lt;/p&gt;
+
+&lt;p&gt;The solution is to use a class called &lt;code&gt;MongoClientURI&lt;/code&gt;instead. &lt;code&gt;MongoClientURI&lt;/code&gt; parses the string argument and splits it into its corresponding parts.&lt;/p&gt;
+
+&lt;p&gt;So, the solution to my problem:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-kotlin&#34; data-lang=&#34;kotlin&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;val&lt;/span&gt; uri = MongoClientURI(System.getenv(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;MONGODB&amp;#34;&lt;/span&gt;))
+&lt;span style=&#34;color:#66d9ef&#34;&gt;val&lt;/span&gt; collection = KMongo.createClient(uri = uri)
+        .getDatabase(uri.database)
+        .getCollection&amp;lt;Jedi&amp;gt;()&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;hr /&gt;
+
+&lt;h1 id=&#34;related&#34;&gt;Related&lt;/h1&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://www.mongodb.com/blog/post/getting-started-with-mongodb-and-java-part-i&#34;&gt;https://www.mongodb.com/blog/post/getting-started-with-mongodb-and-java-part-i&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+></content:encoded>
+      
+    </item>
+    
+    <item>
+      <title>How Much of &#34;The Kotlin Way&#34; Is the Right Way?</title>
+      <link>https://preslav.me/2018/12/28/the-kotlin-way/</link>
+      <pubDate>Fri, 28 Dec 2018 07:10:00 +0000</pubDate>
+      
+      <guid>https://preslav.me/2018/12/28/the-kotlin-way/</guid>
+      <description>NOTE: This post was originally intended to provoke a discussion, and despite its length, the original goal is still the same. Please, share your feedback on Twitter, Reddit, or Dev.to.
+My experience with the JVM dates back from around 2010. Java in those days was a bit different from todays&amp;rsquo; standpoint. Java 6 was the current standard at the time, but most projects I got to work on, were stuck between Java 4 and 5.</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>&lt;p&gt;&lt;em&gt;NOTE: This post was originally intended to provoke a discussion, and despite its length, the original goal is still the same. Please, share your feedback on &lt;a href=&#34;https://twitter.com/intent/tweet?text=%40preslavrachev%20%5BADD%20YOUR%20COMMENT%20HERE%5D&amp;amp;url=https://preslav.me/p/72a4a26e-c120-428f-af5d-98f09f88e2db/&amp;amp;related=preslavrachev&#34;&gt;Twitter&lt;/a&gt;, &lt;a href=&#34;https://www.reddit.com/r/Kotlin/comments/aa9anw/q_how_much_of_the_kotlin_way_is_the_right_way/&#34;&gt;Reddit&lt;/a&gt;, or &lt;a href=&#34;https://dev.to/preslavrachev/q-how-much-of-the-kotlin-way-is-the-right-way-3129&#34;&gt;Dev.to&lt;/a&gt;.&lt;/em&gt;&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;My experience with the JVM dates back from around 2010. Java in those days was a bit different from todays&amp;rsquo; standpoint. Java 6 was the current standard at the time, but most projects I got to work on, were stuck between Java 4 and 5. Those were tough beasts. More verbose and tedious to write code in.&lt;/p&gt;
+
+&lt;p&gt;At that time, we began searching for a way to release the burden of writing code, but keep relying on the vast adoption of the JVM. Groovy and Scala were the two alternatives offering more language expressiveness with less boilerplate and ceremony. And, while Groovy somehow never picked up the self-esteem to be seen as something more of a scripting language for build orchestration and runtime in-app plumbing, Scala looked like the bold and sexy future of the JVM.&lt;/p&gt;
+
+&lt;p&gt;That is, until the language and its community ideologically drifted apart from Java. Although most of the existing Java libraries at the time were compatible and accessible from the Scala runtime, those were seen as archaic, tedious to work with, and simply not built &lt;em&gt;&amp;ldquo;the Scala way&amp;rdquo;&lt;/em&gt;. This slogan was used to justify the building of a whole new ecosystem of tools, libraries, and frameworks, written from the ground up with Scala in mind. It is safe to say that nowadays for every Java library out there, one could find two or three Scala equivalents written &lt;em&gt;&amp;ldquo;the Scala way&amp;rdquo;&lt;/em&gt;. I am not much of a Scala expert, but IMHO, this has led to a total separation between the two communities, each re-inventing the wheel its own way.&lt;/p&gt;
+
+&lt;p&gt;Kotlin was supposed to help solve all of that. Having joined the game late enough, JetBrains put a bet on Kotlin&amp;rsquo;s inter-operability with standard Java code. To achieve this, a language has to be perceived as a companion, and not as a true paradigm shift. For the three years I have worked with and followed Kotlin&amp;rsquo;s development, there have been only a few minor occasions when the inter-operability did not work on 100%, and those were more or less edge cases. It seemed that had finally reached the golden mean, where multiple language paradigms can co-exist and their communities cooperate in order to achieve a common goal.&lt;/p&gt;
+
+&lt;p&gt;Yet, this is not quite what is happening. I have seen the birth of a Kotlin-first community of developers, preaching things &lt;em&gt;&amp;ldquo;the Kotlin way&amp;rdquo;&lt;/em&gt;. Soon enough, tools, libraries, and frameworks started appearing, having perfectly working equivalents in Java, but written in &lt;em&gt;&amp;ldquo;idiomatic Kotlin&amp;rdquo;&lt;/em&gt;. I started wondering where I had seen this before 🤔.&lt;/p&gt;
+
+&lt;p&gt;Don&amp;rsquo;t get me wrong, I am 100% for challenging the Status Quo, but by stepping on what already works well, and not merely throwing it off-board, because it was not built &lt;em&gt;&amp;ldquo;the XYZ way&amp;rdquo;&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;And what do you think?&lt;/p&gt;
+></content:encoded>
+      
+      <media:content url="https://images.unsplash.com/photo-1517963879433-6ad2b056d712?ixlib=rb-1.2.1&amp;q=80&amp;fm=jpg&amp;crop=entropy&amp;cs=tinysrgb&amp;w=1080&amp;fit=max&amp;ixid=eyJhcHBfaWQiOjExNzczfQ" medium="image"/>
+      
+    </item>
+    
+    <item>
+      <title>Dependency Injection in Python: The Java Guy&#39;s Perspective</title>
+      <link>https://preslav.me/2018/12/20/dependency-injection-in-python/</link>
+      <pubDate>Thu, 20 Dec 2018 13:34:36 +0000</pubDate>
+      
+      <guid>https://preslav.me/2018/12/20/dependency-injection-in-python/</guid>
+      <description>Dependency Injection (DI) in Python? Seriously? 🤔
+At this point, I am expecting people to yell at me for thinking like a Java guy, but just bear with me for a moment, will you? Spoiler: I am going to mention Spring only once in this post, I promise.
+NOTE: If you are already familiar with Dependency Injection and want to see it in action, you might want to jump right to the example at the end.</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>
+
+&lt;p&gt;Dependency Injection (DI) in Python? Seriously? 🤔&lt;/p&gt;
+
+&lt;p&gt;At this point, I am expecting people to yell at me for thinking like a Java guy, but just bear with me for a moment, will you? &lt;em&gt;Spoiler:&lt;/em&gt; I am going to mention Spring only once in this post, I promise.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;em&gt;NOTE:&lt;/em&gt;&lt;/strong&gt; If you are already familiar with Dependency Injection and want to see it in action, you might want to jump right to &lt;a href=&#34;#a-more-complex-example&#34;&gt;the example&lt;/a&gt; at the end. Otherwise, keep reading. As always, feel free to send me a &lt;a href=&#34;https://twitter.com/intent/tweet?text=%40preslavrachev%20%5BADD%20YOUR%20COMMENT%20HERE%5D&amp;amp;url=https://preslav.me/p/3c4daf3d-607c-49e4-8aa9-c87a61be1697/&amp;amp;related=preslavrachev&#34;&gt;✏️comment on Twitter&lt;/a&gt;. Your feedback is more than appreciated.&lt;/p&gt;
+
+&lt;p&gt;&amp;hellip;&lt;/p&gt;
+
+&lt;h1 id=&#34;let-s-get-things-straight&#34;&gt;Let&amp;rsquo;s Get Things Straight&lt;/h1&gt;
+
+&lt;p&gt;While I am definitely approaching Python software development from my close-to-a-decade  experience building Java software, I am not trying to preach to you a certain style of programming. Take this simply as a different perspective on things. The Python Universe is so immense that it will be a crime to pretend that DI is necessary for every Python project. While certain types of Python projects will definitely benefit from a bit more structure, for many others, DI might become the worst nightmare. I will try to write down my reasons, and leave the final decision to the reader.&lt;/p&gt;
+
+&lt;h1 id=&#34;a-quick-detour-on-dependency-injection&#34;&gt;A Quick Detour on Dependency Injection&lt;/h1&gt;
+
+&lt;p&gt;I will save you the lecture here. I am sure that many of you already know what DI is all about. Perhaps, some of you have already looked at, if not even read Martin Fowler&amp;rsquo;s &lt;a href=&#34;https://martinfowler.com/articles/injection.html&#34;&gt;Dependency Injection essay&lt;/a&gt;. Even if you haven&amp;rsquo;t, don&amp;rsquo;t panic. I will share you a secret, and that is, &lt;strong&gt;you already know DI, and have used it many times,&lt;/strong&gt; even if you haven&amp;rsquo;t used a particular name for it.&lt;/p&gt;
+
+&lt;p&gt;There is one golden prerequisite for Dependency Injection and that is, Separation of Concerns. Put simply, group logic in separable units, and let these units work together, without any of them knowing much about the implementation details of the other. OOP calls such units &lt;em&gt;classes&lt;/em&gt;, and FP, &lt;em&gt;functions&lt;/em&gt;. The point is, &lt;em&gt;units isolate common logic&lt;/em&gt;. Let&amp;rsquo;s add to this the requirement that no unit explicitly instantiates the units it works with (dependencies). Instead, dependencies are passed upon the unit (injected), usually, during its instantiation.&lt;/p&gt;
+
+&lt;p&gt;So, DI is a fancy term for instantiating classes in a top-level module, and passing them as initializer arguments to one another:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Api&lt;/span&gt;:
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;fetch_remote_data&lt;/span&gt;(self):
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Api called&amp;#39;&lt;/span&gt;)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;42&lt;/span&gt;
+
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;BusinessLogic&lt;/span&gt;:
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; __init__(self, api: Api):
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;api &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; api
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;do_stuff&lt;/span&gt;(self):
+        api_result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;api&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;fetch_remote_data()
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(f&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;the api returned a result: {api_result}&amp;#39;&lt;/span&gt;)
+        &lt;span style=&#34;color:#75715e&#34;&gt;# do something with the data and return a result&lt;/span&gt;
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# ---&lt;/span&gt;
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;__main__&amp;#39;&lt;/span&gt;:
+    api &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Api()
+    logic &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; BusinessLogic(api&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;api)
+
+    &lt;span style=&#34;color:#75715e&#34;&gt;# ...&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(logic&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;do_stuff())&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;There are of course, more Pythonic ways of implementing Dependency Injection. I realize that the one I provided above is very Java-like. I have tried to collect a list of Python-related resources you might want to consult. You will find it at the end of this post.&lt;/p&gt;
+
+&lt;h1 id=&#34;where-explicit-dependency-injection-might-help&#34;&gt;Where Explicit Dependency Injection Might Help&lt;/h1&gt;
+
+&lt;p&gt;I already tried to make it clear that DI is not a silver bullet, and due to Python&amp;rsquo;s versatility of use, it might not fit to every project. In some, it might even hamper the development of the project.&lt;/p&gt;
+
+&lt;p&gt;Python was created to give its developers the freedom to just do things, without sweating much about structure or ceremony, when those are not needed. This is why the Python ecosystem is perfect for scratching out ideas and prototyping, single-purpose CLI tools, or scripts with limited scope and lifetime.&lt;/p&gt;
+
+&lt;p&gt;Yet, for many of these projects, there comes a time, when they grow, or are bound to grow from the onset, and with this growth comes a different set of challenges. Where I see DI fit best, are projects with established requirements, serving a large number of stakeholders. The challenge here is to scale and constantly improve the system, without compromising its stability.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Advantages&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Adding DI to your project will potentially&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;increase its testability and reusability, because by design, it allows for easily replacing one component with another (great for mocking, or replacing one concrete implementation with another)&lt;/li&gt;
+&lt;li&gt;increase the readability. When applying DI your top-level model becomes sort of an orchestrator, instantiating your units and passing dependencies to them. Although this might add a bit of boilerplate, it helps ensure that all the LEGO-block wiring-up happens in one place, and this place will always be the starting point of your later investigations.&lt;/li&gt;
+&lt;li&gt;adds a certain level of common understanding between programmers of different backgrounds. While I am sure that many of you would come up with some more elegant and more Pythonic ways for solving the dependency issue, some of them might be too obscure for non-Python gurus (hi there 👋🏼) and lead to misunderstanding, lost communication, and potentially, compromising the resilience of the end product.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;Disadvantages&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Well, the boilerplate and ceremony might be quite of an issue for some Python purists.&lt;/p&gt;
+
+&lt;h1 id=&#34;a-more-complex-example&#34;&gt;A More Complex Example&lt;/h1&gt;
+
+&lt;p&gt;I have already mentioned it a few times that doing all the instantiation and passing dependencies around by hand can be a bit tedious. It can also be complicated, because of the order of instantiation. The core dependencies must be instantiated first, the units that depend on them afterwards, and so on, until the top-level units, whose role is usually to coordinate the flow of data among their dependencies.&lt;/p&gt;
+
+&lt;p&gt;There are many Python libraries, which already facilitate this process. Among those, I looked at &lt;a href=&#34;https://github.com/ets-labs/python-dependency-injector&#34;&gt;python-dependency-injector&lt;/a&gt;, &lt;a href=&#34;https://github.com/suned/serum&#34;&gt;serum&lt;/a&gt;, and &lt;a href=&#34;https://github.com/alecthomas/injector&#34;&gt;injector&lt;/a&gt;. I found &lt;a href=&#34;https://github.com/alecthomas/injector&#34;&gt;injector&lt;/a&gt; to be closest to what I have come to know and use on Java - &lt;a href=&#34;https://spring.io/&#34;&gt;Spring&lt;/a&gt; and &lt;a href=&#34;https://github.com/google/guice&#34;&gt;Guice&lt;/a&gt;. It is not the least verbose, but it gets the job done. Let&amp;rsquo;s see how it works:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;pip install injector&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Let&amp;rsquo;s take the two classes, I have created above:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Api&lt;/span&gt;:
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;fetch_remote_data&lt;/span&gt;(self):
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Api called&amp;#39;&lt;/span&gt;)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;42&lt;/span&gt;
+
+
+&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;BusinessLogic&lt;/span&gt;:
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; __init__(self, api: Api):
+        self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;api &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; api
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;do_stuff&lt;/span&gt;(self):
+        api_result &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; self&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;api&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;fetch_remote_data()
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(f&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;the api returned a result: {api_result}&amp;#39;&lt;/span&gt;)
+        &lt;span style=&#34;color:#75715e&#34;&gt;# do something with the data and return a result&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The only modification I made, was adding an explicit &lt;a href=&#34;https://www.python.org/dev/peps/pep-0484/&#34;&gt;type hint&lt;/a&gt; to the &lt;code&gt;Api&lt;/code&gt; dependency. This will be used by the library to determine the right object to pass at instantiation.&lt;/p&gt;
+
+&lt;p&gt;Injector, similar to Guice and Spring, adds the concept of a dependency &lt;code&gt;Module&lt;/code&gt;. This is a class that inherits from &lt;code&gt;injector.Module&lt;/code&gt; and has a bunch of methods, each corresponding to the initialization of one dependency or the other:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;AppModule&lt;/span&gt;(Module):
+
+    &lt;span style=&#34;color:#a6e22e&#34;&gt;@singleton&lt;/span&gt;
+    &lt;span style=&#34;color:#a6e22e&#34;&gt;@provider&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;provide_business_logic&lt;/span&gt;(self, api: Api) &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; BusinessLogic:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; BusinessLogic(api&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;api)
+
+    &lt;span style=&#34;color:#a6e22e&#34;&gt;@singleton&lt;/span&gt;
+    &lt;span style=&#34;color:#a6e22e&#34;&gt;@provider&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;provide_api&lt;/span&gt;(self) &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; Api:
+        &lt;span style=&#34;color:#75715e&#34;&gt;# there is no complex logic in our case,&lt;/span&gt;
+        &lt;span style=&#34;color:#75715e&#34;&gt;# but you can use this method to hide the complexity of initial &lt;/span&gt;
+        configuration
+        &lt;span style=&#34;color:#75715e&#34;&gt;# e.g. when instantiating a particular DB connector.&lt;/span&gt;
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; Api()&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Each of these methods is decorated with &lt;code&gt;@provider&lt;/code&gt; (required) and &lt;code&gt;@singleton&lt;/code&gt; (optional, only if you want to ensure that the object instance will always remain the same). Pay attention to the use of type hinting here too. One the one hand, it makes the dependency module code more readable, on the other, it is used by the injector library to determine the right objects to return.&lt;/p&gt;
+
+&lt;p&gt;Let&amp;rsquo;s see how to use our classes. We need to create an Injector and pass it an instance of our AppModule.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;__main__&amp;#39;&lt;/span&gt;:
+    injector &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Injector(AppModule())
+
+    logic &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; injector&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;get(BusinessLogic)
+    logic&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;do_stuff()&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;From now on, when you want to obtain an instance which is inside the dependency graph, from outside the graph, you would have to use the injector. Before you start grunting about the rising amount of boilerplate, let me point out that the actual places where you would need to do that, are either your app&amp;rsquo;s main starting points, or API/Web endpoints in the context of a Web application. Actually, if you are building a Flask app, the creator of injector has got you covered. There is an extension for Flask, called &lt;a href=&#34;https://github.com/alecthomas/flask_injector&#34;&gt;flask-injector,&lt;/a&gt; which hides the boilerplate of having to use the injector object directly.&lt;/p&gt;
+
+&lt;p&gt;Back to our injector instance. The real benefit of having dependency modules, is when you have several of them, for running your app in different contexts. The simplest example is testing. Let&amp;rsquo;s create a version of our Api class for testing purposes:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;TestApi&lt;/span&gt;(Api):
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;fetch_remote_data&lt;/span&gt;(self):
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Demo Api called&amp;#39;&lt;/span&gt;)
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;24&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Assuming that there might be more classes we&amp;rsquo;d like to mock, we create a separate dependency module for them:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;TestAppModule&lt;/span&gt;(Module):
+
+    &lt;span style=&#34;color:#a6e22e&#34;&gt;@singleton&lt;/span&gt;
+    &lt;span style=&#34;color:#a6e22e&#34;&gt;@provider&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;provide_api&lt;/span&gt;(self) &lt;span style=&#34;color:#f92672&#34;&gt;-&amp;gt;&lt;/span&gt; Api:
+        &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; TestApi()&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The real magic happens when creating the injector. You can have as many injectors as you have, and each injector instance can be supplied with as many dependency module configurations as you wish:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; __name__ &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;__main__&amp;#39;&lt;/span&gt;:
+    real_injector &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Injector(AppModule())
+    test_injector &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Injector([AppModule(), TestAppModule()])
+
+    real_logic &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; real_injector&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;get(BusinessLogic)
+    real_logic&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;do_stuff()
+
+    test_logic &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; test_injector&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;get(BusinessLogic)
+    test_logic&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;do_stuff()&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;pre&gt;&lt;code&gt;Api called
+the api returned a result: 42
+Demo Api called
+the api returned a result: 24
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h1 id=&#34;the-end&#34;&gt;The End&lt;/h1&gt;
+
+&lt;p&gt;I will stop here. I hope, if not really having managed to convince you, to have given you a slightly different perspective on things. Until next time!&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h1 id=&#34;related-resources&#34;&gt;Related Resources&lt;/h1&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://martinfowler.com/articles/injection.html&#34;&gt;Inversion of Control Containers and the Dependency Injection pattern&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://medium.com/@suneandreasdybrodebel/pythonic-dependency-injection-a-practical-guide-83a1b1299280&#34;&gt;Pythonic Dependency Injection: A Practical Guide - Sune Andreas Dybro Debel - Medium&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://python-3-patterns-idioms-test.readthedocs.io/en/latest/index.html&#34;&gt;Python 3 Patterns, Recipes and Idioms - Python 3 Patterns, Recipes and Idioms&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://python-dependency-injector.ets-labs.org/introduction/di_in_python.html&#34;&gt;Dependency injection and inversion of control in Python - Dependency Injector 3.14.2 documentation&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/alecthomas/injector&#34;&gt;alecthomas/injector&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/suned/serum&#34;&gt;suned/serum&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/ets-labs/python-dependency-injector&#34;&gt;ets-labs/python-dependency-injector&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://github.com/RobertoPrevato/rodi&#34;&gt;RobertoPrevato/rodi&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+></content:encoded>
+      
+    </item>
+    
+    <item>
+      <title>Designing Well-Structured REST APIs with Flask-RestPlus: Part 1</title>
+      <link>https://preslav.me/2018/12/02/designing-well-structured-rest-apis-with-flask-restplus-part-1/</link>
+      <pubDate>Sun, 02 Dec 2018 15:46:47 +0000</pubDate>
+      
+      <guid>https://preslav.me/2018/12/02/designing-well-structured-rest-apis-with-flask-restplus-part-1/</guid>
+      <description>This is the first part of a two-part series. In this post, I will introduce Flask-RestPlus and demonstrate how to start organising APIs around its simple REST-based conventions. Next time, I will address the topic of request/response marshalling (serialisation) and validation.
+A seasoned Spring developer, I felt a bit uneasy when designing and future-proofing a Flask-based API for the first time. I have recently started using Python way beyond my original intention to just play with data, and found Flask to be a super-easy micro-service alternative to Spring Boot or Ktor.</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>
+
+&lt;p&gt;This is the first part of a two-part series. In this post, I will introduce &lt;a href=&#34;https://flask-restplus.readthedocs.io/en/stable/&#34;&gt;Flask-RestPlus&lt;/a&gt; and demonstrate how to start organising APIs around its simple REST-based conventions. Next time, I will address the topic of request/response marshalling (serialisation) and validation.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;A seasoned Spring developer, I felt a bit uneasy when designing and future-proofing a &lt;a href=&#34;http://flask.pocoo.org/&#34;&gt;Flask&lt;/a&gt;-based API for the first time. I have recently started using Python way beyond my original intention to just play with data, and found Flask to be a super-easy micro-service alternative to &lt;a href=&#34;https://spring.io/projects/spring-boot&#34;&gt;Spring Boot&lt;/a&gt; or &lt;a href=&#34;https://ktor.io/&#34;&gt;Ktor&lt;/a&gt;. The one thing I was really concerned about, was making sure that the API  request/response format was standardised (think, providing a Swagger schema), well-documented, and validated. While working with Java, much of this would come straight from the compiler itself, due to the static-type nature of the language. When you combine this with a couple of great libraries like &lt;a href=&#34;https://github.com/FasterXML/jackson&#34;&gt;Jackson&lt;/a&gt; and &lt;a href=&#34;http://springfox.github.io/springfox/&#34;&gt;SpringFox&lt;/a&gt;, the API communication gets documented and validated with minimal intrusion to the actual code. In Python, this would require tedious &lt;code&gt;if-else&lt;/code&gt; checks all over the place &amp;hellip; or so I thought.&lt;/p&gt;
+
+&lt;h2 id=&#34;flask-restplus-to-the-rescue&#34;&gt;Flask-RestPlus to the Rescue&lt;/h2&gt;
+
+&lt;p&gt;Unlike &lt;a href=&#34;https://www.djangoproject.com/&#34;&gt;Django&lt;/a&gt;, Flask does not come with batteries included, but there is a whole ecosystem of open-source libraries and extensions contributed by the community. One of these is called &lt;a href=&#34;https://flask-restplus.readthedocs.io/en/stable/&#34;&gt;Flask-RestPlus&lt;/a&gt; and it is the absolute dream-come-true for every Flask API designer. Flask-RestPlus is a &lt;a href=&#34;http://flask.pocoo.org/docs/1.0/extensiondev/&#34;&gt;Flask extension&lt;/a&gt; library, and as the name suggests, it helps ease the building of structured RESTful APIs with minimal setup, and encourages best practices. Flask RestPlus follows certain conventions, but does not insist on them, the way Django does.  In a way, Flask-RestPlus tries to help organise a growing Flask project, but without it losing its minimal overhead, which is the greatest charm of Flask.&lt;/p&gt;
+
+&lt;p&gt;The goal of this series is to start with a simple Flask app, and try to address the following points with a bit of Flask-RestPlus at a time:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Structure and auto-document an API &lt;strong&gt;(Part 1)&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;Ensure request/response payload validation &lt;strong&gt;(Part 2)&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&#34;demo-app&#34;&gt;Demo App&lt;/h3&gt;
+
+&lt;p&gt;Let&amp;rsquo;s start with a simple Flask-based API for a conference management application:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; flask &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; Flask
+
+app &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Flask(__name__)
+
+
+&lt;span style=&#34;color:#a6e22e&#34;&gt;@app.route&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/conferences/&amp;#34;&lt;/span&gt;)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_all__conferences&lt;/span&gt;():
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    returns a list of conferences
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+
+
+&lt;span style=&#34;color:#a6e22e&#34;&gt;@app.route&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/conferences/&amp;#34;&lt;/span&gt;, methods&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;[&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;POST&amp;#39;&lt;/span&gt;])
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;add_conference&lt;/span&gt;():
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    Adds a new conference to the list
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+
+
+&lt;span style=&#34;color:#a6e22e&#34;&gt;@app.route&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/conferences/&amp;lt;int:id&amp;gt;&amp;#34;&lt;/span&gt;)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_conference&lt;/span&gt;(id):
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    Displays a conference&amp;#39;s details
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+
+&lt;span style=&#34;color:#a6e22e&#34;&gt;@app.route&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/conferences/&amp;lt;int:id&amp;gt;&amp;#34;&lt;/span&gt;)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;edit_conference&lt;/span&gt;(id):
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    Edits a selected conference
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Installing Flask-RestPlus is easy&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;pip install Flask-RestPlus&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Let&amp;rsquo;s simply introduce an Api object for now, try to wrap our app instance with it, replace the routing decorators, and see what happens:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; flask &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; Flask
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; flask_restplus &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; Api
+
+app &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Flask(__name__)
+api &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Api(app&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;app)
+
+
+&lt;span style=&#34;color:#a6e22e&#34;&gt;@api.route&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/conferences/&amp;#34;&lt;/span&gt;)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_all__conferences&lt;/span&gt;():
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;pass&lt;/span&gt;
+
+
+&lt;span style=&#34;color:#a6e22e&#34;&gt;@api.route&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/conferences/&amp;#34;&lt;/span&gt;, methods&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;[&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;POST&amp;#39;&lt;/span&gt;])
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;add_conference&lt;/span&gt;():
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;pass&lt;/span&gt;
+
+
+&lt;span style=&#34;color:#a6e22e&#34;&gt;@api.route&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/conferences/&amp;lt;int:id&amp;gt;&amp;#34;&lt;/span&gt;)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_conference&lt;/span&gt;(id):
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    Displays a conference&amp;#39;s details
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+
+&lt;span style=&#34;color:#a6e22e&#34;&gt;@api.route&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/conferences/&amp;lt;int:id&amp;gt;&amp;#34;&lt;/span&gt;)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;edit_conference&lt;/span&gt;(id):
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    Edits a selected conference
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;    &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;As soon as the app starts, we will get the following error:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;AttributeError: &#39;function&#39; object has no attribute &#39;as_view&#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This is because if you want to use RestPlus for some of your Flask functions, you have to enclose them in a scoping class. Not only that, but inside the enclosing class, you should name your methods, corresponding to the HTTP methods that REST is based on: GET, POST, PUT, and DELETE:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;@api.route&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/conferences/&amp;#34;&lt;/span&gt;)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ConferenceList&lt;/span&gt;(Resource):
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get&lt;/span&gt;(self):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        returns a list of conferences
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Before anyone starts objecting, let me explain why this is helpful. Flask-RestPlus uses the Flask concept of &amp;ldquo;Pluggable Views&amp;rdquo; to introduce &lt;code&gt;Resource&lt;/code&gt; (as in, REST resource).&lt;/p&gt;
+
+&lt;p&gt;Let&amp;rsquo;s be honest. While most Flask applications start simple, many of them outgrow the initial idea, and cramming several handler functions in the main module scope quickly becomes a mess. This is why &lt;a href=&#34;http://exploreflask.com/en/latest/blueprints.html&#34;&gt;Flask Blueprints&lt;/a&gt; exist to help split common functionality into multiple modules.&lt;/p&gt;
+
+&lt;p&gt;Flask-RestPlus makes great use of Blueprints too, as I will demonstrate later, but Resources go one level of granularity further. A Resource class can have multiple methods, but each one should be named after one of the accepted HTTP verbs. What if you need more than one &lt;code&gt;GET&lt;/code&gt; or &lt;code&gt;POST&lt;/code&gt; method for your API? Well, create multiple Resource classes and put each method in the corresponding resource class. It might look a little overwhelming at first, coming from the cut-the-boilerplate nature of Flask, but with a bit of playing around, it won&amp;rsquo;t be a brainer at all, and it will pay off tremendously in the long run.&lt;/p&gt;
+
+&lt;p&gt;Let&amp;rsquo;s see how our tiny app will look after the transformations:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; flask &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; Flask
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; flask_restplus &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; Api, Resource
+
+app &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Flask(__name__)
+api &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Api(app&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;app)
+
+
+&lt;span style=&#34;color:#a6e22e&#34;&gt;@api.route&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/conferences/&amp;#34;&lt;/span&gt;)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ConferenceList&lt;/span&gt;(Resource):
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get&lt;/span&gt;(self):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        returns a list of conferences
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;post&lt;/span&gt;(self):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        Adds a new conference to the list
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+
+
+&lt;span style=&#34;color:#a6e22e&#34;&gt;@api.route&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/conferences/&amp;lt;int:id&amp;gt;&amp;#34;&lt;/span&gt;)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Conference&lt;/span&gt;(Resource):
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get&lt;/span&gt;(self, id):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        Displays a conference&amp;#39;s details
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;put&lt;/span&gt;(self, id):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        Edits a selected conference
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt; &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;With this tiny bit of overhead (if you even consider this any overhead at all), you get so much in return. Start the app and point to &lt;a href=&#34;http://localhost:5000&#34;&gt;http://localhost:5000&lt;/a&gt;. You will see that the index page has turned into a Swagger UI, which shows the already defined API endpoints, neatly organised into categories (namespaces):&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://preslav.me/images/2018/december/image.png&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;This is great for documenting, playing with, and sharing you API schema around. Yet, this is by far not the only thing that Flask-RestPlus does for you. It goes beyond simply documenting the API, in ensuring that the API is compliant with the schema. Put simply, Flask-RestPlus makes sure that if certain request parameters are marked as mandatory, or if request/response models are supposed to have a certain structure, those are checked and validated at runtime. In my opinion, this is real advantage of Flask-RestPlus, sitting on top of a Flask application. The current example is too simple to demonstrate the real power of request/response marshalling and validation, but both will be throughly described in Part 2.&lt;/p&gt;
+
+&lt;h3 id=&#34;namespaces&#34;&gt;Namespaces&lt;/h3&gt;
+
+&lt;p&gt;Namespaces are optional, and add a bit of additional organisational touch to the API, mainly, from a documentation point of view. A namespace allows you to group related Resources under a common root, and is simple to create:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;ns_conf &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; api&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;namespace(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;conferences&amp;#39;&lt;/span&gt;, description&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Conference operations&amp;#39;&lt;/span&gt;)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;To bring certain Resources under a given namespace, all you need to do, is to replace &lt;code&gt;@api&lt;/code&gt; with &lt;code&gt;@ns_conf&lt;/code&gt;. Notice also that the name of the namespace replaces the name of the resource, so endpoints can simply to refer to &lt;code&gt;/&lt;/code&gt;, instead of copying the name of the resource time and again:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; flask &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; Flask
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; flask_restplus &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; Api, Resource
+
+app &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Flask(__name__)
+api &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Api(app&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;app)
+ns_conf &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; api&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;namespace(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;conferences&amp;#39;&lt;/span&gt;, description&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Conference operations&amp;#39;&lt;/span&gt;)
+
+
+&lt;span style=&#34;color:#a6e22e&#34;&gt;@ns_conf.route&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/&amp;#34;&lt;/span&gt;)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;ConferenceList&lt;/span&gt;(Resource):
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get&lt;/span&gt;(self):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        returns a list of conferences
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;post&lt;/span&gt;(self):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        Adds a new conference to the list
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+
+
+&lt;span style=&#34;color:#a6e22e&#34;&gt;@ns_conf.route&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;/&amp;lt;int:id&amp;gt;&amp;#34;&lt;/span&gt;)
+&lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;Conference&lt;/span&gt;(Resource):
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get&lt;/span&gt;(self, id):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        Displays a conference&amp;#39;s details
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;
+
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;def&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;put&lt;/span&gt;(self, id):
+        &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;#34;&amp;#34;
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        Edits a selected conference
+&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;        &amp;#34;&amp;#34;&amp;#34;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;One will notice afterwards that the Swagger UI display has changed too, to reflect the namespacing:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://preslav.me/images/2018/december/image-1.png&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;blueprints&#34;&gt;Blueprints&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&#34;http://flask.pocoo.org/docs/blueprints/#blueprints&#34;&gt;Flask Blueprints&lt;/a&gt; are a popular way of designing modular applications. The same applies to Flask-RestPlus. The production version of our application will certainly outgrow the four endpoints we started with. There might be other resources, or at the very least, you might want to move to move your API away from the root of your app. Both cases are a perfect candidate for a Blueprint.  Let&amp;rsquo;s move all of our API endpoints under &lt;code&gt;/api/v1&lt;/code&gt;, without touching the routes of even one of them. This example is coming straight from the Flask-RestPlus &lt;a href=&#34;https://flask-restplus.readthedocs.io/en/stable/scaling.html#use-with-blueprints&#34;&gt;documentation&lt;/a&gt;, and is illustrative enough to help close this chapter of the journey:&lt;/p&gt;
+
+&lt;p&gt;Create a Blueprint the usual way, and instead of wrapping our app instance with the RestPlus API,  we will wrap the Blueprint instead. This way, independent of our app, we are free to move our API part into a different module: (e.g. &lt;code&gt;blueprint/api.py&lt;/code&gt;).&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; flask &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; Blueprint
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; flask_restplus &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; Api
+
+blueprint &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Blueprint(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;api&amp;#39;&lt;/span&gt;, __name__)
+api &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Api(blueprint)
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Bring in the rest of our API code here&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This leaves only a tiny bit of bridging code to introduce the Blueprint to the main app, and set the URL prefix. The next time you start your app, the API endpoints will be accessible only under the specified URL prefix (&lt;code&gt;/api/v1&lt;/code&gt;):&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; flask &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; Flask
+&lt;span style=&#34;color:#f92672&#34;&gt;from&lt;/span&gt; apis &lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; blueprint &lt;span style=&#34;color:#66d9ef&#34;&gt;as&lt;/span&gt; api
+
+app &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Flask(__name__)
+app&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;register_blueprint(api, url_prefix&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;/api/1&amp;#39;&lt;/span&gt;)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Last but not least, it is always a good idea to move the Swagger UI documentation away from the root. As in everything else in RestPlus, this part is extremely ease, too. You can override the default location by passing an additional parameter to the initialiser:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;api &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; Api(app&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;app, doc&lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;/docs&amp;#39;&lt;/span&gt;)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;hr /&gt;
+
+&lt;p&gt;This sums up the first part of my series. I hope that it was informative, and will help you structure your Flask-based REST APIs better in the future. Till next time!&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h2 id=&#34;further-reading&#34;&gt;Further Reading&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://medium.freecodecamp.org/structuring-a-flask-restplus-web-service-for-production-builds-c2ec676de563&#34;&gt;How to structure a Flask-RESTPlus web service for production builds&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+></content:encoded>
+      
+      <media:content url="https://images.unsplash.com/photo-1531083894382-04a4f09c998f?ixlib=rb-0.3.5&amp;q=80&amp;fm=jpg&amp;crop=entropy&amp;cs=tinysrgb&amp;w=1080&amp;fit=max&amp;ixid=eyJhcHBfaWQiOjExNzczfQ&amp;s=774784f0805880a8b64693a15540c1ef" medium="image"/>
+      
+    </item>
+    
+    <item>
+      <title>Data Science on Your iPad</title>
+      <link>https://preslav.me/2018/08/12/data-science-on-your-ipad/</link>
+      <pubDate>Sun, 12 Aug 2018 05:29:00 +0000</pubDate>
+      
+      <guid>https://preslav.me/2018/08/12/data-science-on-your-ipad/</guid>
+      <description>This article is a follow-up transcription to a talk I recently gave at a local Munich machine learning meetup. Unlike my previous talk, this time I wanted to convey the idea of using an iPad for actively running data science experiments, as opposed to passively consuming information. I illustrated my point with a few example iOS applications I personally use on a daily basis, which I hope would be good starting points to get the audience interested in the idea.</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>
+
+&lt;p&gt;This article is a follow-up transcription to a talk I recently gave at a local &lt;a href=&#34;https://www.meetup.com/Hacking-Machine-Learning&#34;&gt;Munich machine learning meetup&lt;/a&gt;. Unlike &lt;a href=&#34;https://preslav.me/2018/05/25/my-first-machine-learning-talk/&#34;&gt;my previous talk&lt;/a&gt;, this time I wanted to convey the idea of using an iPad for actively running data science experiments, as opposed to passively consuming information. I illustrated my point with a few example iOS applications I personally use on a daily basis, which I hope would be good starting points to get the audience interested in the idea. Being an iOS developer, who has once built a 3rd-party App Store search engine, I know first-hand how difficult it is to find anything inside the App Store, more so, when carefully specifying what one is looking for. Therefore, I believe that if nothing else, even having this one collection of links should be a valuable starting point for further exploration.&lt;/p&gt;
+
+&lt;p&gt;Before I get to the apps, let me start with some background:&lt;/p&gt;
+
+&lt;h2 id=&#34;why-a-tablet&#34;&gt;Why a Tablet?&lt;/h2&gt;
+
+&lt;p&gt;Although it might no longer get the media&amp;rsquo;s attention as the tech sector&amp;rsquo;s latest sexy gadget, the tablet has replaced the laptop/desktop in a number of activities, where one previously needed a &amp;ldquo;real machine&amp;rdquo;. What is more, the tablet is slowly getting out of people&amp;rsquo;s notion as being handy coffee table device for content consumption. It is rather becoming the preferred content creation choice of many, particularly, creative professions, such as writers, musicians, and visual artists. This has caught the eye of companies like Apple, who have decided to double-down on the iPad&amp;rsquo;s Pro model, targeted primarily at professionals.&lt;/p&gt;
+
+&lt;p&gt;If there is one thing that could describe our generation best, this would be our constant state of movement. We spend so much time commuting, or in some form of passive travel. We might as well try to start reclaiming some of this time and use it for creative and productive activities. This is where a tablet fits in for me.&lt;/p&gt;
+
+&lt;p&gt;Even at the bulkiest of sizes, an iPad is more convenient to carry around than a laptop. It is &amp;ldquo;always on&amp;rdquo;, can be used while sitting, lying or standing, with or without a keyboard, and requires less interactions than a laptop. More than anything else, I find the level of multitasking exactly right for this type of medium. Indeed, one can do way less things at the same time on an iPad than one can do using a laptop. I tend to consider this a feature rather than a shortcoming: less multitasking =&amp;gt; less distraction, i.e. more immersion.&lt;/p&gt;
+
+&lt;p&gt;Although my daily work involves sitting behind a laptop and crafting complex systems, it is rarely behind the laptop where these ideas originate. I feel most creative when discussing things with people or when I drift away somewhere outside, my iPad in my hand.&lt;/p&gt;
+
+&lt;p&gt;Now back to the main topic&amp;hellip;&lt;/p&gt;
+
+&lt;h2 id=&#34;coding-on-an-ipad&#34;&gt;Coding on an iPad?&lt;/h2&gt;
+
+&lt;p&gt;It is certainly doable, and getting used to it takes way less time than one might expect. As an example, take developer Richard Morgan, who &lt;a href=&#34;https://www.imore.com/starsceptre-ios-game-was-entirely-coded-ipad&#34;&gt;developed an iOS game on his iPad&lt;/a&gt;, entirely during his commute around London. Everything is possible when you have the right mindset and the right tools.&lt;/p&gt;
+
+&lt;p&gt;As for the tools, there are quite a few good ones, hidden inside the App Store. In fact, code editors for iOS have existed even before the release of the original iPad. Among them, many in-app IDEs of sorts. Yet, it wasn&amp;rsquo;t until last year, when I started seriously taking look at the possibility writing code and running it entirely on an iPad. In 2017, Apple &lt;a href=&#34;https://www.macstories.net/linked/apples-app-store-guidelines-now-allow-executable-code-in-educational-apps-and-developer-tools/&#34;&gt;permitted&lt;/a&gt; the sharing and downloading of executable code on iOS devices, for teaching, learning and personal development purposes. A validation that writing code on iOS is here to stay.&lt;/p&gt;
+
+&lt;p&gt;The apps below are in no particular order, besides the fact that I will be specifically looking at Pythonista later on. All apps are paid, which is something I firmly stand behind and support, yet this post is no product or service endorsement of any kind. I am just a happy customer:&lt;/p&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;App Name&lt;/th&gt;
+&lt;th&gt;Languages&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;http://omz-software.com/pythonista/&#34;&gt;Pythonista 3&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;Python 2 / 3&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://codea.io/&#34;&gt;Codea&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;Lua&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;http://continuous.codes/&#34;&gt;Continuous&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;C# / F# .NET&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://itunes.apple.com/gb/app/irstudio/id1173749340&#34;&gt;iRstudio&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt; R&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://itunes.apple.com/gb/app/analyser/id1083042861?mt=8&#34;&gt;Analyser&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;Python&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;&lt;a href=&#34;https://itunes.apple.com/us/app/swift-playgrounds/id908519492&#34;&gt;Playgrounds&lt;/a&gt;&lt;/td&gt;
+&lt;td&gt;Swift&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h2 id=&#34;pythonista&#34;&gt;Pythonista&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&#34;http://omz-software.com/pythonista/&#34;&gt;Pythonista&lt;/a&gt; is one the few apps, just like &lt;a href=&#34;https://ia.net/writer&#34;&gt;iA Writer&lt;/a&gt; (which I am using right now to write this post), which IMHO, deserves to come on an iPad pre-installed. To those having tried the Swift Playgrounds app on an iPad, it is just mere peanuts in comparison with what Pythonista offers:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Fully featured support for both Python 2 and Python 3&lt;/li&gt;
+&lt;li&gt;Excellent documentation, keyboard extensions, and code completion&lt;/li&gt;
+&lt;li&gt;Has an integrated debugger, a property inspector, and its own REPL-like console&lt;/li&gt;
+&lt;li&gt;Provides extensions for writing GUIs and communication with other apps on your device&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://preslav.me/images/2018/august/pythonista-1.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://preslav.me/images/2018/august/pythonista-2.jpg&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;iframe width=&#34;560&#34; height=&#34;315&#34; src=&#34;https://www.youtube.com/embed/UYIZlqQPusw&#34; frameborder=&#34;0&#34; allow=&#34;autoplay; encrypted-media&#34; allowfullscreen&gt;&lt;/iframe&gt;
+
+&lt;p&gt;Pythonista comes pre-packed with a ton of libraries we love and use every day: NumPy, Matplotlib, Requests, BeatufulSoup, etc. Yet, lacks some of our favourites, due to Apple&amp;rsquo;s restrictions: Pandas, SciPy, Scikit-Learn, and unfortunately, TensorFlow. There are other apps like
+&lt;a href=&#34;https://itunes.apple.com/gb/app/analyser/id1083042861?mt=8&#34;&gt;Analyser&lt;/a&gt; and the now defunct Computable, which feature many of those as part of the app bundle, which lets me remain optimistic that we will see many of those included in future releases of Pythonista too.&lt;/p&gt;
+
+&lt;p&gt;Pythonista is great for quickly scrapping ideas, and doing exploratory data analysis. In fact, I am running most of my early-stage exploratory analysis on cryptocurrency pricing directly in the app. It is absolutely indispensable when learning new concepts, be those Python, or math / science-related. Last but not least, the integrated GUI and extension capabilities allow for creating entire iOS applications using Python. Think about it. An iOS app, built using Python, using only an iPad. It can&amp;rsquo;t get better than this.&lt;/p&gt;
+
+&lt;iframe width=&#34;560&#34; height=&#34;315&#34; src=&#34;https://www.youtube.com/embed/a7QcX4Ke3Hc&#34; frameborder=&#34;0&#34; allow=&#34;autoplay; encrypted-media&#34; allowfullscreen&gt;&lt;/iframe&gt;
+
+&lt;h2 id=&#34;what-about-jupyter&#34;&gt;What about Jupyter?&lt;/h2&gt;
+
+&lt;p&gt;Indeed, what about &lt;a href=&#34;https://jupyter.org/&#34;&gt;Jupyter&lt;/a&gt;? Unless you have been living in a cave, and self-proclaimed yourself a data scientist, you should know that Jupyter  Notebook, and similar tools which mix code and narrative have taken the scientific world by storm. Moreover, Jupyter Notebook is entirely Web-based. Therefore, it shouldn&amp;rsquo;t be a big deal to run your private Jupyter instance, or use of the many readily available instances from &lt;a href=&#34;https://notebooks.azure.com/&#34;&gt;Microsoft&lt;/a&gt;, &lt;a href=&#34;https://www.kaggle.com/kernels&#34;&gt;Kaggle&lt;/a&gt;, &lt;a href=&#34;https://colab.research.google.com/&#34;&gt;Google&lt;/a&gt;, and many other providers. My answer to this is &lt;strong&gt;yes and no&lt;/strong&gt;. Although Jupyter Notebook is Web-based and technically opens up in mobile Safari, the actual usability of the Web version on mobile is less than ideal. Browsing through and reading code somehow works. It is the editing of code, where things get really painful. Many of the beloved Jupyter shortcuts are not supported, due to the lack of corresponding keys on the iPad&amp;rsquo;s keyboard. When trying to type inside a cell, the browser tries to compensate by zooming in in and out in a horrible fashion. A very, very unpleasant thing.&lt;/p&gt;
+
+&lt;p&gt;So far, so good, but there must be an app that brings the best of Jupyter and the native iOS experience together, right? Indeed, but a bit later on that. First, a word about Computable.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&#34;http://computableapp.com/index_old.html&#34;&gt;Computable&lt;/a&gt; was an app that promised to be the best of Pythonista, with  even more DS libraries under the hood, and its own native Jupyter support. The ultimate bliss.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://www.computableapp.com/img/keyboard@2x.png&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;h6 id=&#34;computable-in-action-photo-source-http-www-computableapp-com-index-old-html&#34;&gt;Computable in Action. &lt;a href=&#34;http://www.computableapp.com/index_old.html&#34;&gt;Photo Source&lt;/a&gt;&lt;/h6&gt;
+
+&lt;p&gt;Sadly, the app is no longer available. It was pulled from the App Store in 2015 for various reasons, but the developer was kind enough to &lt;a href=&#34;https://github.com/ktraunmueller/Computable&#34;&gt;put the original code up on GitHub&lt;/a&gt;, and make it open-source. In fact, as far as I know, I have been the first one to &lt;a href=&#34;https://github.com/preslavrachev/Computable&#34;&gt;fork&lt;/a&gt; the repository, and I am keen on trying to at least trying to revive it. I am looking for other contributors as well, so anyone willing to help is more than welcome.&lt;/p&gt;
+
+&lt;p&gt;Now, back to my dilemma. Indeed, there is a great app I discovered last year, which brings the best of both worlds. It is called
+&lt;a href=&#34;https://juno.sh/&#34;&gt;Juno&lt;/a&gt; and it is a slick, brand new, native iOS client for working with Jupyter Notebook and JupyterLab instances.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://navoshta.com/images/posts/juno/screenshot_h_01@2x.png&#34; alt=&#34;&#34; /&gt;&lt;/p&gt;
+
+&lt;h6 id=&#34;photo-source-https-navoshta-com&#34;&gt;&lt;a href=&#34;https://navoshta.com&#34;&gt;Photo Source&lt;/a&gt;&lt;/h6&gt;
+
+&lt;p&gt;Juno will easily connect to a self-hosted Jupyter server, or to a cloud-provided Jupyter VM (e.g. Azure, CoCalc, and many more coming soon). It also supports &lt;a href=&#34;https://mybinder.org/&#34;&gt;Binder&lt;/a&gt;, for a series of pre-made tutorial notebooks, which is ideal for people to get on board without yet having an actual Jupyter instance running.&lt;/p&gt;
+
+&lt;iframe width=&#34;560&#34; height=&#34;315&#34; src=&#34;https://www.youtube.com/embed/6QNFi4EIz6U&#34; frameborder=&#34;0&#34; allow=&#34;autoplay; encrypted-media&#34; allowfullscreen&gt;&lt;/iframe&gt;
+
+&lt;p&gt;Indeed, the lack of working truly offline might be a show-stopper for some, but I am more than sure that the developers are working hard to address this in future versions. Understanding the difficulties of having all Python libraries locally under the hood, I can only wish for an easy way to browse through, and perhaps, locally caching pre-rendered Jupyter notebooks for later reference. This would be great, and one won&amp;rsquo;t have to render those to PDF or something more obscure.&lt;/p&gt;
+
+&lt;h2 id=&#34;a-few-more-apps&#34;&gt;A few more apps&lt;/h2&gt;
+
+&lt;p&gt;Before closings have decided to reiterate on my original statement that  the App Store is full of hidden gems which unfortunately, often did not really get the credit they deserve. This is the reason why I decided to share a few complementary apps that professionals from all disciplines will surely be interested in trying out. As before, those are not in any particular order, and I am not endorsing any of them, just sharing my personal opinion.&lt;/p&gt;
+
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Purpose&lt;/th&gt;
+&lt;th&gt;Apps&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;Taking Notes and Documenting&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;http://happenapps.com/#quiver&#34;&gt;Quiver&lt;/a&gt;, &lt;a href=&#34;https://ia.net/writer&#34;&gt;iAWriter&lt;/a&gt;, &lt;a href=&#34;http://www.bear-writer.com/&#34;&gt;Bear&lt;/a&gt;, &lt;a href=&#34;https://fsnot.es/&#34;&gt;FSNotes&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;Source Control&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://workingcopyapp.com/&#34;&gt;Working Copy&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+
+&lt;tr&gt;
+&lt;td&gt;SSH and Terminal Emulation&lt;/td&gt;
+&lt;td&gt;&lt;a href=&#34;https://www.termius.com/&#34;&gt;Termius&lt;/a&gt;, &lt;a href=&#34;https://panic.com/prompt/&#34;&gt;Prompt&lt;/a&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Last but not least, here are &lt;a href=&#34;https://speakerdeck.com/preslavrachev/data-science-on-your-ipad&#34;&gt;my slides&lt;/a&gt; from the talk. Until next time!&lt;/p&gt;
+></content:encoded>
+      
+      <media:content url="https://images.unsplash.com/photo-1517421189533-dbc3211edf9a?ixlib=rb-1.2.1&amp;q=80&amp;fm=jpg&amp;crop=entropy&amp;cs=tinysrgb&amp;w=1080&amp;fit=max&amp;ixid=eyJhcHBfaWQiOjExNzczfQ" medium="image"/>
+      
+    </item>
+    
+    <item>
+      <title>Live-reloading of Python Modules in the Python REPL / IPython / Jupyter Console</title>
+      <link>https://preslav.me/2018/04/22/live-reloading-of-python-modules/</link>
+      <pubDate>Sun, 22 Apr 2018 04:14:00 +0000</pubDate>
+      
+      <guid>https://preslav.me/2018/04/22/live-reloading-of-python-modules/</guid>
+      <description>Often, I would work on a Python module and add changes to it live, which I would then want to test immediately. Piece of cake! Add the changes and execute the script again. Well, that’s certainly a way, but as modules get bigger, they tend to import other modules, or do some preliminary setup work.
+With time, I have developed this practice of opening up a Python REPL (though I recommend IPython or the Jupyter Console for that), importing my in-progress module and singling out separate functions I would like to test.</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>
+
+&lt;p&gt;Often, I would work on a Python module and add changes to it live, which I would then want to test immediately. Piece of cake! Add the changes and execute the script again. Well, that’s certainly a way, but as modules get bigger, they tend to import other modules, or do some preliminary setup work.&lt;/p&gt;
+
+&lt;p&gt;With time, I have developed this practice of opening up a Python REPL (though I recommend IPython or the Jupyter Console for that), importing my in-progress module and singling out separate functions I would like to test. The problem is, when I do changes to the Python code (like, add a new function), they are not immediately usable, because neither the Python REPL, nor IPython / Jupyter would auto-reload them.&lt;/p&gt;
+
+&lt;h2 id=&#34;give-me-the-code&#34;&gt;Give me the code&lt;/h2&gt;
+
+&lt;p&gt;Yes, we are coming to that&lt;/p&gt;
+
+&lt;h3 id=&#34;general-way&#34;&gt;General Way&lt;/h3&gt;
+
+&lt;p&gt;Python 3 supports inline reloading of modules using a function called, well clever enough, &lt;code&gt;reload&lt;/code&gt;. It used to be a built-in function in Python 2, but this is no longer the case. If you are using Python 3.2+, you should import it extra:&lt;/p&gt;
+
+&lt;p&gt;For Python 3.2 and 3.3:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; importlib
+importlib&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;reload(some_module)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;For Python 3.4+:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;import&lt;/span&gt; imp
+imp&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;reload(some_module)&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id=&#34;ipython-jupyter-magic&#34;&gt;IPython/Jupyter Magic&lt;/h3&gt;
+
+&lt;p&gt;Jupyter comes with a set of extensions only applicable to the Jupyter/iPython sessions, called &lt;a href=&#34;https://ipython.org/ipython-doc/3/interactive/magics.html&#34;&gt;magics&lt;/a&gt;. One of these “magics” is the ability to load custom extensions, &lt;a href=&#34;http://ipython.readthedocs.io/en/stable/config/extensions/index.html&#34;&gt;one of which&lt;/a&gt; allows auto-reloading of modules. To enable this, you should add the following two commands, before any imports:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt;load_ext autoreload
+&lt;span style=&#34;color:#f92672&#34;&gt;%&lt;/span&gt;autoreload &lt;span style=&#34;color:#ae81ff&#34;&gt;2&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;# you can check out the the documentation for the rest of the autoreaload modes&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;# by apending a question mark to %autoreload, like this:&lt;/span&gt;
+&lt;span style=&#34;color:#75715e&#34;&gt;# %autoreload?&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This way, as soon as you hit &lt;code&gt;Save&lt;/code&gt; in your code editor, you should be able to re-run a Jupyter cell or an iPython line again, and if it is calling your  module, it should automatically call the latest version.&lt;/p&gt;
+
+&lt;h2 id=&#34;links&#34;&gt;Links&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://support.enthought.com/hc/en-us/articles/204469240-Jupyter-IPython-After-editing-a-module-changes-are-not-effective-without-kernel-restart&#34;&gt;Jupyter / IPython: After editing a module, changes are not effective without kernel restart – Enthought Knowledge Base&lt;/a&gt;&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;a href=&#34;https://stackoverflow.com/questions/5364050/reloading-submodules-in-ipython#5399339&#34;&gt;python - Reloading submodules in IPython - Stack Overflow&lt;/a&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+></content:encoded>
+      
+    </item>
+    
+    <item>
+      <title>Pandas: Finding a Row Where One of Its Values Is at a Minimum/Maximum</title>
+      <link>https://preslav.me/2018/02/16/pandas-finding-a-row-where-one-of-its-values-is-at-a-minimum-maximum/</link>
+      <pubDate>Fri, 16 Feb 2018 06:58:00 +0000</pubDate>
+      
+      <guid>https://preslav.me/2018/02/16/pandas-finding-a-row-where-one-of-its-values-is-at-a-minimum-maximum/</guid>
+      <description>Often, we will want to get to get a specific row, which marks the minimum or maximum of one of its columns. Let&amp;rsquo;s suppose we have the SF Salaries dataset from Kaggle. We want to find the employee name, with the largest total pay benefits. The experience with writing NumPy/Pandas filter conditions will quickly let us produce the following version:
+sal[sal[&amp;#39;TotalPayBenefits&amp;#39;] == sal[&amp;#39;TotalPayBenefits&amp;#39;].max()][&amp;#39;EmployeeName&amp;#39;] which is absolutely valid, but is it the only option?</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>&lt;p&gt;Often, we will want to get to get a specific row, which marks the minimum or maximum of one of its columns. Let&amp;rsquo;s suppose we have the &lt;a href=&#34;https://www.kaggle.com/kaggle/sf-salaries&#34;&gt;SF Salaries dataset from Kaggle&lt;/a&gt;. We want to find the employee name, with the largest total pay benefits. The experience with writing NumPy/Pandas filter conditions will quickly let us produce the following version:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;sal[sal[&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;TotalPayBenefits&amp;#39;&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; sal[&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;TotalPayBenefits&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;max()][&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;EmployeeName&amp;#39;&lt;/span&gt;]&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;which is absolutely valid, but is it the only option? I could imagine that that in a large dataset, there would be quite a lot of comparison involved, plus the creation of a whole new data series (the filter condition). Is there perhaps a more performant one? How about trying out &lt;a href=&#34;http://pandas.pydata.org/pandas-docs/version/0.17.0/generated/pandas.DataFrame.idxmax.html&#34;&gt;idmax()&lt;/a&gt; (or, for those coming from NumPy, &lt;a href=&#34;http://pandas.pydata.org/pandas-docs/version/0.17.0/generated/pandas.DataFrame.argmax.html&#34;&gt;argmax()&lt;/a&gt;, both do the same). By given a column, the function will return the index of the data frame, where it is at its highest.&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;sal&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;loc[sal[&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;TotalPayBenefits&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;idxmax()][&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;EmployeeName&amp;#39;&lt;/span&gt;]
+
+sal&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;loc[sal[&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;TotalPayBenefits&amp;#39;&lt;/span&gt;]&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;argmax()][&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;EmployeeName&amp;#39;&lt;/span&gt;]&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I did a quick performance check, and indeed, idmax/argmax turn out twice as fast:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;# the original filter condition&lt;/span&gt;
+&lt;span style=&#34;color:#ae81ff&#34;&gt;815&lt;/span&gt; µs ± &lt;span style=&#34;color:#ae81ff&#34;&gt;11&lt;/span&gt;.5 µs per loop &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;mean ± std. dev. of &lt;span style=&#34;color:#ae81ff&#34;&gt;7&lt;/span&gt; runs, &lt;span style=&#34;color:#ae81ff&#34;&gt;1000&lt;/span&gt; loops each&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# idmax()&lt;/span&gt;
+&lt;span style=&#34;color:#ae81ff&#34;&gt;402&lt;/span&gt; µs ± &lt;span style=&#34;color:#ae81ff&#34;&gt;7&lt;/span&gt;.61 µs per loop &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;mean ± std. dev. of &lt;span style=&#34;color:#ae81ff&#34;&gt;7&lt;/span&gt; runs, &lt;span style=&#34;color:#ae81ff&#34;&gt;1000&lt;/span&gt; loops each&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# argmax&lt;/span&gt;
+&lt;span style=&#34;color:#ae81ff&#34;&gt;404&lt;/span&gt; µs ± &lt;span style=&#34;color:#ae81ff&#34;&gt;8&lt;/span&gt;.81 µs per loop &lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;mean ± std. dev. of &lt;span style=&#34;color:#ae81ff&#34;&gt;7&lt;/span&gt; runs, &lt;span style=&#34;color:#ae81ff&#34;&gt;1000&lt;/span&gt; loops each&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;></content:encoded>
+      
+    </item>
+    
+    <item>
+      <title>Debugging Network Calls in React Native Using the Chrome Debugger</title>
+      <link>https://preslav.me/2017/03/26/debugging-network-calls-in-react-native-using-the-chrome-debugger/</link>
+      <pubDate>Sun, 26 Mar 2017 05:25:00 +0000</pubDate>
+      
+      <guid>https://preslav.me/2017/03/26/debugging-network-calls-in-react-native-using-the-chrome-debugger/</guid>
+      <description>TL;DR! Just give me the code In your index.js file (or your platform-specific index file for that matter), simply add the following line to the top, directly after the import statements:
+XMLHttpRequest = GLOBAL.originalXMLHttpRequest ? GLOBAL.originalXMLHttpRequest : GLOBAL.XMLHttpRequest;  You will also need a Chrome plugin that overrides CORS. I use CORS Toggle. You may also decide to skip the plugin and start Chrome with CORS disabled:
+chrome --disable-web-security then, as usually, start remote debugging from your app, and open: http://localhost:8081/debugger-ui on your computer.</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>
+
+&lt;h2 id=&#34;tl-dr-just-give-me-the-code&#34;&gt;TL;DR! Just give me the code&lt;/h2&gt;
+
+&lt;p&gt;In your &lt;code&gt;index.js&lt;/code&gt; file (or your platform-specific index file for that matter), simply add the following line to the top, directly after the &lt;code&gt;import&lt;/code&gt; statements:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-javascript&#34; data-lang=&#34;javascript&#34;&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;XMLHttpRequest&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;GLOBAL&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;originalXMLHttpRequest&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;?&lt;/span&gt; 
+  &lt;span style=&#34;color:#a6e22e&#34;&gt;GLOBAL&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;originalXMLHttpRequest&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;GLOBAL&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;XMLHttpRequest&lt;/span&gt;;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;You will also need a Chrome plugin that overrides &lt;a href=&#34;https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS&#34;&gt;CORS&lt;/a&gt;. I use &lt;a href=&#34;https://chrome.google.com/webstore/detail/cors-toggle/omcncfnpmcabckcddookmnajignpffnh?hl=en&#34;&gt;CORS Toggle&lt;/a&gt;. You may also decide to skip the plugin and start Chrome with CORS disabled:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;chrome --disable-web-security&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;then, as usually, start remote debugging from your app, and open: &lt;code&gt;http://localhost:8081/debugger-ui&lt;/code&gt; on your computer.&lt;/p&gt;
+
+&lt;p&gt;That&amp;rsquo;s it. Please, make sure to never rely completely on the network infrastructure of the Chrome debugger. Many networking problems may be specific to your device/simulator, and will not be caught by the debugger.&lt;/p&gt;
+
+&lt;h2 id=&#34;ok-now-the-longer-explanation&#34;&gt;OK, now the longer explanation&lt;/h2&gt;
+
+&lt;p&gt;One of the big advantages of React Native is the ease of debugging your code. When running an app in development mode, one can debug it remotely, using the well familiar Chrome DevTools. Logging to the console and setting breakpoints in the code work just as if the app were running in a normal browser&amp;rsquo;s window.&lt;/p&gt;
+
+&lt;p&gt;It is, therefore, strange to many RN starters, why one of the core functionalities of the Chrome Inspector, namely the network call interception, is not available. Instead, if a network error occurs, all the JavaScript code gets access to, is an Error object that simply says &amp;ldquo;Network Error&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;To fully explain why this is so is out of the scope of this post. There is a great Medium article that explains in detail how the &amp;ldquo;magic&amp;rdquo; behind the RN remote debugging works. I totally recommend you read, regardless of your experience with React and RN.&lt;/p&gt;
+
+&lt;p&gt;Long story short, when debugging RN remotely, the JavaScript code actually gets executed in the browser, and not on the device. This allows you to interrupt the flow with breakpoints, or log the console output in the Chrome DevTools window. While the JS code gets executed in the browser, the native calls happen on the device itself. The browser and the device running the app keep a WebSocket connection open and synchronize the code execution on every step.&lt;/p&gt;
+
+&lt;p&gt;All the native calls run on the device itself, and executing a network call makes no difference. As such, it is not an easy task to make network traces appear in the Inspector window. At least, not without overriding the default platform APIs (for each of the supported platforms) and communicate every state change with the browser. I am sure that the core dev team is working on a solution, and will deliver it in a future release.&lt;/p&gt;
+
+&lt;p&gt;Until then, you can test network calls by replacing the default implementation of &lt;code&gt;XMLHttpRequest&lt;/code&gt; and use the one provided by the browser. As you saw in the beginning, it turns out that this is surprisingly simple. Once you do it, override the browser&amp;rsquo;s default CORS rules, and reload the app, you should start seeing network requests in the Chrome Inspector. As I already pointed out, though, the Chrome Inspector can be helpful inasmuch as the requests and responses are concerned. It won&amp;rsquo;t help you prevent issues with the native network infrastructure of your emulator/device. To inspect those, you will rather have to use a proxy, such as &lt;a href=&#34;https://www.charlesproxy.com/&#34;&gt;Charles&lt;/a&gt;, or jump into tracing the native log files.&lt;/p&gt;
+></content:encoded>
+      
+    </item>
+    
+    <item>
+      <title>Securing your ElasticSearch instances</title>
+      <link>https://preslav.me/2017/02/03/securing-your-elasticsearch-instances/</link>
+      <pubDate>Fri, 03 Feb 2017 05:29:00 +0000</pubDate>
+      
+      <guid>https://preslav.me/2017/02/03/securing-your-elasticsearch-instances/</guid>
+      <description>Securing your ElasticSearch instances and keeping all the fun Often, we choose convenience over security. Many modern tools such as MongoDB and ElasticSearch, have grown in popularity, partly because of their easy-to-set-up-and-tinker-with nature. Just spin off an instance, point your browser to the right URL and you&amp;rsquo;re ready to start sending queries.
+Unfortunately, one thing comes for another, and as we have recently seen, ElasticSearch left in the open can be a vulnerable target, same as MongoDB was in its heyday.</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>
+
+&lt;h3 id=&#34;securing-your-elasticsearch-instances-and-keeping-all-the-fun&#34;&gt;Securing your ElasticSearch instances and keeping all the fun&lt;/h3&gt;
+
+&lt;p&gt;Often, we choose convenience over security. Many modern tools such as MongoDB and ElasticSearch, have grown in popularity, partly because of their easy-to-set-up-and-tinker-with nature. Just spin off an instance, point your browser to the right URL and you&amp;rsquo;re ready to start sending queries.&lt;/p&gt;
+
+&lt;p&gt;Unfortunately, one thing comes for another, and as &lt;a href=&#34;http://www.zdnet.com/article/elasticsearch-ransomware-attacks-now-number-in-the-thousands/&#34;&gt;we have recently seen&lt;/a&gt;, ElasticSearch left in the open can be a vulnerable target, same as MongoDB was in its heyday. In light of the &lt;a href=&#34;http://www.zdnet.com/article/elasticsearch-ransomware-attacks-now-number-in-the-thousands/&#34;&gt;recent attacks&lt;/a&gt; on many open ElasticSearch instances across the world, I decided to share a quick tip on how to set remote ES instances, and keep them secure, by not compromising on its easy-to-play-with nature.&lt;/p&gt;
+
+&lt;h2 id=&#34;part-one-restricting-the-access-to-your-elasticsearch-instance&#34;&gt;Part One: Restricting the access to your ElasticSearch instance&lt;/h2&gt;
+
+&lt;p&gt;Let&amp;rsquo;s start. The easiest way to setup an ElasticSearch instance is &lt;a href=&#34;https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html&#34;&gt;spinning up a container&lt;/a&gt; off the default Docker image:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;docker pull docker.elastic.co/elasticsearch/elasticsearch:&amp;lt;VERSION&amp;gt;
+
+docker run -p &lt;span style=&#34;color:#ae81ff&#34;&gt;9200&lt;/span&gt;:9200 -e &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;http.host=0.0.0.0&amp;#34;&lt;/span&gt; -e &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;transport.host=127.0.0.1&amp;#34;&lt;/span&gt; elasticsearch:&amp;lt;VERSION&amp;gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Running the above line, will create a portion mapping from 9200 within the container, to port 9200 on the host machine. One problem here, is that by doing so, it also exposes it to the outside world. This could easily be seen by running &lt;code&gt;iptables&lt;/code&gt; against your host:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;iptables -t nat -L -n
+
+&lt;span style=&#34;color:#75715e&#34;&gt;# Outputs&lt;/span&gt;
+...
+target     prot opt source               destination
+DNAT       tcp  --  &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;.0.0.0/0            &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;.0.0.0/0            tcp dpt:9200 to:XXX.XXX.XXX.XXX:9200
+...&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Indeed, Docker takes the heavy-lifting of configuring your &lt;code&gt;iptables&lt;/code&gt; firewall, but often, this may result in a configuration which is too permissive. What one should do instead, is provide a specific IP to the port mapping configuration. Thankfully, Docker supports this, so all we have to do is modify the above command, using the &lt;code&gt;IP:host_port:container_port&lt;/code&gt; mapping:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;docker run -p &lt;span style=&#34;color:#ae81ff&#34;&gt;127&lt;/span&gt;.0.0.1:9200:9200 -e &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;http.host=0.0.0.0&amp;#34;&lt;/span&gt; -e &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;transport.host=127.0.0.1&amp;#34;&lt;/span&gt; elasticsearch:&amp;lt;VERSION&amp;gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Perfect! Putting the &lt;code&gt;127.0.0.1&lt;/code&gt; will guarantee that the container will be available inside the host machine, but not accessible outside. A quick proof of this is looking at iptables again:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;target     prot opt source               destination
+DNAT       tcp  --  &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;.0.0.0/0            &lt;span style=&#34;color:#ae81ff&#34;&gt;127&lt;/span&gt;.0.0.1            tcp dpt:9200 to:XX.XXX.XXX.XXX:9200&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;if you point your browser to port 9200 you should not be able to see anything, but executing `curl 127.0.0.1:9200 from inside the host machine should work.&lt;/p&gt;
+
+&lt;h2 id=&#34;part-two-accessing-your-elasticsearch-instance-in-a-secure-manner&#34;&gt;Part Two: Accessing your ElasticSearch instance in a secure manner&lt;/h2&gt;
+
+&lt;p&gt;What we did was all fine, but how do access our ElasticSearch instance now, without losing the flexibility of quickly testing stuff on ES? Easy, using *NIX&amp;rsquo;s Swiss Army Knife - &lt;code&gt;SSH&lt;/code&gt;. SSH is a tool most programmers use on a daily basis, but fewer of them are aware that SSH allows for local and remote port forwarding. What this means is that SSH can create an encrypted tunnel between your machine and your server, such that you can accesses services running remotely, as if they were running on loclahost (local forwarding). There is also remote forwarding, which alternatively, allows you to securely access locally running services from your remote server.&lt;/p&gt;
+
+&lt;p&gt;While we are going to use local port forwarding in our case, both are analogous to each other:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;ssh -L/-R &amp;lt;PORT_ON_THE_LOCAL/REMOTE_MACHINE&amp;gt;:&amp;lt;HOST_TO_MAP_TO&amp;gt;:&amp;lt;PORT_ON_THE_REMOTE/LOCAL_MACHINE&amp;gt; &amp;lt;USERNAME&amp;gt;@&amp;lt;REMOTE_IP&amp;gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In our particular case, this looks like this:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;ssh -L &lt;span style=&#34;color:#ae81ff&#34;&gt;9200&lt;/span&gt;:127.0.0.1:9200  user@XX.XXX.XXX.XXX&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This basically says: map my local port &lt;code&gt;9200&lt;/code&gt; to a call to &lt;code&gt;127.0.0.1:9200&lt;/code&gt; on the &lt;code&gt;XX.XXX.XXX.XXX&lt;/code&gt; server. When you point your browser to &lt;code&gt;http://localhost:9200&lt;/code&gt;, you should now see the familiar ElasticSearch output, even though, as before &lt;code&gt;XX.XXX.XXX.XXX:9200&lt;/code&gt; returns nothing. You can let the above command run in the background and run as a daemon.&lt;/p&gt;
+
+&lt;h2 id=&#34;conclusion&#34;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;These two steps are all you need, in order to keep enjoying the freedom of playing with ElasticSearch or MongoDB, but doing it in a fully secure manner. This recipe can be applied to just about any service. And you really don&amp;rsquo;t need Docker even. The fact that I mentioned it in part one, is because it makes setting up easy, and also saves you from having to tinker with &lt;code&gt;iptables&lt;/code&gt; yourselves.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;NOTE:&lt;/strong&gt; Please, keep in mind that while running a SSH tunnel is just about perfect for testing and development purposes, it may not be an optimal solution for production. The reason for this is the latency caused by en/decrypting the data and shuffling it through the tunnel. It may become a bottleneck with many incoming requests running in parallel. I am yet to stress-test this setup and will share my observations in a further post. I will also share some more ideas on how to access an ElasticSearch instance securely, but also in a productive manner.&lt;/p&gt;
+></content:encoded>
+      
+    </item>
+    
+    <item>
+      <title>Kotlin Basics: apply() and copy()</title>
+      <link>https://preslav.me/2016/06/26/kotlin-basics-apply-and-copy/</link>
+      <pubDate>Sun, 26 Jun 2016 12:56:00 +0000</pubDate>
+      
+      <guid>https://preslav.me/2016/06/26/kotlin-basics-apply-and-copy/</guid>
+      <description>Without any doubt, Java is a verbose language. This verbosity of the language makes it easy to understand Java code by new programmers. It is though one of the reasons, why many Java programmers find writing Java code tedious. Kotlin brings a touch of succinctness in places, where even programmers new to Java, may find code unnecessarily over-bloated.
+How many times have you had to do the same thing over and over again:</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>
+
+&lt;p&gt;Without any doubt, Java is a verbose language. This verbosity of the language makes it easy to understand Java code by new programmers. It is though one of the reasons, why many Java programmers find writing Java code tedious. Kotlin brings a touch of succinctness in places, where even programmers new to Java, may find code unnecessarily over-bloated.&lt;/p&gt;
+
+&lt;p&gt;How many times have you had to do the same thing over and over again:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;private&lt;/span&gt; A &lt;span style=&#34;color:#a6e22e&#34;&gt;updateA&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;A objA&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; B objB&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt;
+    objA&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;setC&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;objB&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;getC&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;());&lt;/span&gt;
+    objA&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;setD&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;objB&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;getD&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;());&lt;/span&gt;
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; objA&lt;span style=&#34;color:#f92672&#34;&gt;;&lt;/span&gt;
+&lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Having an object, you want to modify some of its properties and simply return the same object. In Java, you can&amp;rsquo;t do this in a single chained fashion. In Kotlin, you can squeeze the above method to the following single line of code:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;fun &lt;span style=&#34;color:#a6e22e&#34;&gt;updateA&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;objA: A&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; objB: B&lt;span style=&#34;color:#f92672&#34;&gt;):&lt;/span&gt; A &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; objA&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;apply&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt; c &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; objB&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;c&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;;&lt;/span&gt; d &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; objB&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;d&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id=&#34;apply&#34;&gt;apply()&lt;/h3&gt;
+
+&lt;p&gt;By definition, &lt;a href=&#34;https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/apply.html&#34;&gt;&lt;code&gt;apply&lt;/code&gt;&lt;/a&gt; accepts a function, and sets its scope to that of the object on which apply has been invoked. This means that no explicit reference to the object is needed. &lt;code&gt;Apply()&lt;/code&gt; can do much more than simply setting properties of course. It is a transformation function, capable of evaluating complex logic before returning. At the end, the function simply returns the same object (with the added changes), so one can keep using it on the same line of code.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Note:&lt;/strong&gt; Please, note as well the direct use of properties instead of explicitly calling getters and setters. This is not a bad practice, since Kotlin implicitly invokes provided getters and setters of a property, when working with the property (similar to C#).&lt;/p&gt;
+
+&lt;h3 id=&#34;copy&#34;&gt;copy()&lt;/h3&gt;
+
+&lt;p&gt;Please, remember that using apply on an object is NOT a thread-safe operation, and mutates the state of the object. If you want to retain the original object and return an immutable copy of it, you can use the function &lt;a href=&#34;https://kotlinlang.org/docs/reference/data-classes.html#copying&#34;&gt;&lt;code&gt;copy()&lt;/code&gt;&lt;/a&gt;, provided in all instances of data classes.&lt;/p&gt;
+
+&lt;p&gt;Assuming that your class contains only data (usually a good practice to separate logic from data), you can turn it into a &lt;a href=&#34;https://kotlinlang.org/docs/reference/data-classes.html&#34;&gt;data class&lt;/a&gt;:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;data &lt;span style=&#34;color:#66d9ef&#34;&gt;class&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;User&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;val name: String&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; val age: Int&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Data classes have a few advantages, and one of them is definitely the &lt;a href=&#34;https://kotlinlang.org/docs/reference/data-classes.html#copying&#34;&gt;&lt;code&gt;copy()&lt;/code&gt;&lt;/a&gt; function, provided to each and every instance. It not only provides a copy of the original object, leaving its state intact, but also allows setting new values to some of its properties at copy-time:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;val user1 &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; User&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;John Smith&amp;#34;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;,&lt;/span&gt; 24&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;
+val user2 &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; user1&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;copy&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;age &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; 31&lt;span style=&#34;color:#f92672&#34;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Kotlin supports &lt;a href=&#34;http://blog.preslav.me/2016/05/29/kotlin-tips-named-parameters-default-arguments/&#34;&gt;named parameters&lt;/a&gt;, known from other languages, such as Python and Scala. In this case, they make life much easier, as all you need to do, is specify the name of the particular property (or properties) you want to modify by copying.&lt;/p&gt;
+
+&lt;p&gt;At the end you can combine the power and succinctness of both &lt;code&gt;apply()&lt;/code&gt; and &lt;code&gt;copy()&lt;/code&gt; by calling apply after copying:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-java&#34; data-lang=&#34;java&#34;&gt;val user2 &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; user1&lt;span style=&#34;color:#f92672&#34;&gt;.&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;copy&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;(&lt;/span&gt;age &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; 31&lt;span style=&#34;color:#f92672&#34;&gt;).&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;apply&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;{&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;//&lt;/span&gt; execute some logic here &lt;span style=&#34;color:#f92672&#34;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;></content:encoded>
+      
+    </item>
+    
+    <item>
+      <title>What’s with the 50/72 rule?</title>
+      <link>https://preslav.me/2015/02/21/what-s-with-the-50-72-rule/</link>
+      <pubDate>Sat, 21 Feb 2015 06:59:00 +0000</pubDate>
+      
+      <guid>https://preslav.me/2015/02/21/what-s-with-the-50-72-rule/</guid>
+      <description>It is part of common sense to assume that the worthiest commit messages lie far from any extremes. Years ago, I often fell in the trap of hastily sending a commit after commit, annoyed by the fact that I have to add a summary to it (let alone a description). I&amp;rsquo;ve seen many projects whose commit summaries consist primarily of one-word verbs like [FIX], [CLEAN], [TEST], etc.
+They don&amp;rsquo;t tell much do they?</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>&lt;p&gt;It is part of common sense to assume that the worthiest commit messages lie far from any extremes. Years ago, I often fell in the trap of hastily sending a commit after commit, annoyed by the fact that I have to add a summary to it (let alone a description). I&amp;rsquo;ve seen many projects whose commit summaries consist primarily of one-word verbs like [FIX], [CLEAN], [TEST], etc.&lt;/p&gt;
+
+&lt;p&gt;They don&amp;rsquo;t tell much do they? Six months down the road, you&amp;rsquo;d be scratching your head, trying to remember what you were thinking exactly six months before, when you wrote that commit.&lt;/p&gt;
+
+&lt;p&gt;On the other hand are the &amp;ldquo;novels&amp;rdquo;. Some programmers go into much detail of what they&amp;rsquo;ve done, both in the summary, and in the description. This makes it difficult to read, and understand later on, what they did exactly.&lt;/p&gt;
+
+&lt;p&gt;Being verbose is by no means a bad thing. In fact, programmers are encouraged to put lengthy details about their commits, but only in the description. The summary is what helps you and other programmers to skim through thousands of commits, so it must be both concise and insightful.&lt;/p&gt;
+
+&lt;p&gt;In a &lt;a href=&#34;http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html&#34;&gt;2008 blog post&lt;/a&gt;, &lt;a href=&#34;https://twitter.com/tpope&#34;&gt;tpope&lt;/a&gt;, described a system for creating commit messages, which I started calling simply, the &lt;em&gt;&amp;ldquo;50 / 72&amp;rdquo;&lt;/em&gt; rule. The rules of the game are simple:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;The first line of your commit message must be maximum 50 characters long. No more, and (ideally), no less.&lt;/li&gt;
+&lt;li&gt;Leave a blank line&lt;/li&gt;
+&lt;li&gt;Start writing your description. The description can be as verbose as it suits you. Each line in your description should though wrap at the 72nd mark.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Git is smart enough to distinguish the first line of your commit message as your summary. In fact, if you try &lt;em&gt;git shortlog&lt;/em&gt;, instead of &lt;em&gt;git log&lt;/em&gt;, you will see a long list of commit messages, consisting of the id of the commit, and the summary only. The reason for wrapping your description lines at the 72nd mark is that &lt;em&gt;git log&lt;/em&gt; adds a padding of 4 blank spaces when displaying the commit message. To center the message perfectly, and make it read well on an 80-column terminal, you&amp;rsquo;d want to leave space for 4 more blank spaces at right side. That&amp;rsquo;s where 72 comes from.&lt;/p&gt;
+
+&lt;p&gt;What about the 50? An analysis of the average length of commit messages in the linux kernel suggests that the ideal size of a git commit summary is around 50 characters in length:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://preslav.me/images/2015/february/0_Hm0dO0UnjFBprfV-.png&#34; alt=&#34;&#34; /&gt;Most commit messages average around 50 characters in length&lt;/p&gt;
+
+&lt;p&gt;Most code editors display the current line and column number that the cursor is at. Many support automatic wrap-line settings. If you are using GitHub&amp;rsquo;s desktop app (as I used to), it will also show you warnings when you are over the limit.&lt;/p&gt;
+
+&lt;p&gt;Writing a great commit summary is like writing a great tweet, only shorter. Id suggest to try and write your thoughts at first, to see how long it gets. Then you&amp;rsquo;s paraphrase it, and put the extra content (the details) in the summary. Try to use the 50-column mark as a guideline for your thoughts. Try to reach as close as possible to it, without going over. Remember, short commit messages do not help, too long don&amp;rsquo;t either.&lt;/p&gt;
+
+&lt;p&gt;How does your team compare to the linux kernel contributors? You can check yourselves, using the code below:&lt;/p&gt;
+
+&lt;p&gt;You can use the data and plot it on a real histogram, using &lt;a href=&#34;http://stackoverflow.com/a/5328669/1107412&#34;&gt;matplotlib&lt;/a&gt;. Many thanks to &lt;a href=&#34;http://stackoverflow.com/users/209050/mgalgs&#34;&gt;mgalgs&lt;/a&gt; for posting the &lt;a href=&#34;http://stackoverflow.com/a/11993051/1107412&#34;&gt;code&lt;/a&gt;, and the &lt;a href=&#34;http://stackoverflow.com/a/11993051/1107412&#34;&gt;histogram&lt;/a&gt; originally on &lt;a href=&#34;http://stackoverflow.com/a/11993051/1107412&#34;&gt;StackOverflow&lt;/a&gt;.&lt;/p&gt;
+></content:encoded>
+      
+      <media:content url="https://preslav.me/images/2015/february/1_756pH2sfB-0227AkUe1VXA.png" medium="image"/>
+      
+    </item>
+    
+    <item>
+      <title>Gulp vs Grunt. Why one? Why the Other?</title>
+      <link>https://preslav.me/2015/01/06/gulp-vs-grunt-why-one-why-the-other/</link>
+      <pubDate>Tue, 06 Jan 2015 06:29:00 +0000</pubDate>
+      
+      <guid>https://preslav.me/2015/01/06/gulp-vs-grunt-why-one-why-the-other/</guid>
+      <description>So you&amp;rsquo;ve been trying to wrap your heads around and decide between Grunt and Gulp? Yeah, me too, been there, done that. In my case, the decision wasn&amp;rsquo;t really hard. I&amp;rsquo;ve never had strong feelings for Grunt, and for a long time, I used a custom made ANT script. I used to copy it over to every new project, and it helped me with basic tasks — moving, copying, cleaning, linting, minifying, etc.</description>
+      <dc:creator>Preslav Rachev</dc:creator>
+      <content:encoded>
+
+&lt;p&gt;So you&amp;rsquo;ve been trying to wrap your heads around and decide between Grunt and Gulp? Yeah, me too, been there, done that. In my case, the decision wasn&amp;rsquo;t really hard. I&amp;rsquo;ve never had strong feelings for Grunt, and for a long time, I used a custom made ANT script. I used to copy it over to every new project, and it helped me with basic tasks — moving, copying, cleaning, linting, minifying, etc. At one point, I switched over to Grunt, but my workflow essentially mimicked the one I had already created using ANT.&lt;/p&gt;
+
+&lt;p&gt;So, when Gulp came out, I was right at the point of willing to dive deep into JS-based task runners. Plus, it quickly became the darling of a large portion of the JS community, and many projects, like Ionic, adopted it right away. So, my choice was easy.&lt;/p&gt;
+
+&lt;blockquote class=&#34;twitter-tweet&#34;&gt;&lt;p lang=&#34;en&#34; dir=&#34;ltr&#34;&gt;Getting started with Gulp &lt;a href=&#34;http://t.co/qKo0rOXGT4&#34;&gt;http://t.co/qKo0rOXGT4&lt;/a&gt; &amp;quot;Gulp is a streaming build system&amp;quot;. Think Grunt, but faster and less config.&lt;/p&gt;&amp;mdash; Sindre Sorhus (@sindresorhus) &lt;a href=&#34;https://twitter.com/sindresorhus/status/420272334281662464?ref_src=twsrc%5Etfw&#34;&gt;January 6, 2014&lt;/a&gt;&lt;/blockquote&gt;
+&lt;script async src=&#34;https://platform.twitter.com/widgets.js&#34; charset=&#34;utf-8&#34;&gt;&lt;/script&gt;
+
+
+&lt;p&gt;Yet, writing Grunt off for all the wrong reasons does not feel right. It is still a great tool, with a bustling community around it, so it makes a lot of sense to make a proper comparison between Grunt and Gulp.&lt;/p&gt;
+
+&lt;h1 id=&#34;the-differences&#34;&gt;The Differences&lt;/h1&gt;
+
+&lt;blockquote class=&#34;twitter-tweet&#34;&gt;&lt;p lang=&#34;en&#34; dir=&#34;ltr&#34;&gt;&lt;a href=&#34;https://twitter.com/hashtag/Grunt?src=hash&amp;amp;ref_src=twsrc%5Etfw&#34;&gt;#Grunt&lt;/a&gt; vs &lt;a href=&#34;https://twitter.com/hashtag/Gulp?src=hash&amp;amp;ref_src=twsrc%5Etfw&#34;&gt;#Gulp&lt;/a&gt;: &lt;a href=&#34;http://t.co/eaaolHHIl6&#34;&gt;http://t.co/eaaolHHIl6&lt;/a&gt; (piping is beautiful!) This is so reminds me of &lt;a href=&#34;https://twitter.com/hashtag/Maven?src=hash&amp;amp;ref_src=twsrc%5Etfw&#34;&gt;#Maven&lt;/a&gt; vs &lt;a href=&#34;https://twitter.com/hashtag/Gradle?src=hash&amp;amp;ref_src=twsrc%5Etfw&#34;&gt;#Gradle&lt;/a&gt;. Always voted for code over config&lt;/p&gt;&amp;mdash; Evgeny Goldin (@evgeny_goldin) &lt;a href=&#34;https://twitter.com/evgeny_goldin/status/521003643802513409?ref_src=twsrc%5Etfw&#34;&gt;October 11, 2014&lt;/a&gt;&lt;/blockquote&gt;
+&lt;script async src=&#34;https://platform.twitter.com/widgets.js&#34; charset=&#34;utf-8&#34;&gt;&lt;/script&gt;
+
+
+&lt;p&gt;There are two main differences between Grunt and Gulp:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Grunt focuses on configuration, while Gulp focuses on code&lt;/li&gt;
+&lt;li&gt;Grunt was built around a set of &lt;a href=&#34;http://bocoup.com/weblog/introducing-grunt/&#34;&gt;built-in, and commonly used tasks&lt;/a&gt;, while Gulp came around with the idea of enforcing nothing, but how community-developed micro-tasks should connect to each other&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;That is not to say that Grunt does not support community extensions. Of course, Grunt has supported creating custom plugins since the beginning, and I am sure that one can find a plugin for just about anything one needs. It was just the nature of the built-in tasks that made me stick around a little longer with my ANT script. In retrospect, I have to admit that I was wrong that for being sceptical about it becoming as popular as it is today. In early 2015, Grunt still holds a larger community than Gulp, despite the latter catching up fast.&lt;/p&gt;
+
+&lt;p&gt;Every task in Grunt is an array of different plugin configurations, that simply get executed one after another, in a strictly independent, and sequential fashion:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-javascript&#34; data-lang=&#34;javascript&#34;&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;grunt&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;initConfig&lt;/span&gt;({
+    &lt;span style=&#34;color:#a6e22e&#34;&gt;clean&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; {
+    &lt;span style=&#34;color:#a6e22e&#34;&gt;src&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; [&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;build/app.js&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;build/vendor.js&amp;#39;&lt;/span&gt;]
+    },
+    
+    &lt;span style=&#34;color:#a6e22e&#34;&gt;copy&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; {
+    &lt;span style=&#34;color:#a6e22e&#34;&gt;files&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; [{
+        &lt;span style=&#34;color:#a6e22e&#34;&gt;src&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;build/app.js&amp;#39;&lt;/span&gt;,
+        &lt;span style=&#34;color:#a6e22e&#34;&gt;dest&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;build/dist/app.js&amp;#39;&lt;/span&gt;
+    }]
+    }
+    
+    &lt;span style=&#34;color:#a6e22e&#34;&gt;concat&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; {
+    &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;build/app.js&amp;#39;&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; [&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;build/vendors.js&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;build/app.js&amp;#39;&lt;/span&gt;]
+    }
+    
+    &lt;span style=&#34;color:#75715e&#34;&gt;// ... other task configurations ...
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    
+});
+
+&lt;span style=&#34;color:#a6e22e&#34;&gt;grunt&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;registerTask&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;build&amp;#39;&lt;/span&gt;, [&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;clean&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;bower&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;browserify&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;concat&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;copy&amp;#39;&lt;/span&gt;]);
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In this case, &amp;lsquo;clean&amp;rsquo; and &amp;lsquo;concat&amp;rsquo; must be configured before the &amp;lsquo;build&amp;rsquo; task is registered. Each task configuration is independent from all the rest. When dealing with IO, such as files, each task accesses the file separately — opening the file, applying the changes, and closing the file. Therefore, almost every task requires a source and destination to be specified. This not only doubles the effort for the developer, but it also makes Grunt relatively slower thanGulp.&lt;/p&gt;
+
+&lt;p&gt;Gulp on the other hand is all about streams and building complex pipelines with ease. It uses node.js&amp;rsquo; streams, and executes faster, since it does not open/close files, or create intermediary copies all the time. This is a sample task declaration, taken straight from Ionic&amp;rsquo;s gulpfile.js&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-javascript&#34; data-lang=&#34;javascript&#34;&gt;&lt;span style=&#34;color:#75715e&#34;&gt;//import the necessary gulp plugins
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;var&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;gulp&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;require&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;gulp&amp;#39;&lt;/span&gt;);
+&lt;span style=&#34;color:#66d9ef&#34;&gt;var&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;sass&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;require&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;gulp-sass&amp;#39;&lt;/span&gt;);
+&lt;span style=&#34;color:#66d9ef&#34;&gt;var&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;minifyCss&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;require&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;gulp-minify-css&amp;#39;&lt;/span&gt;);
+&lt;span style=&#34;color:#66d9ef&#34;&gt;var&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;rename&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;require&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;gulp-rename&amp;#39;&lt;/span&gt;);
+
+&lt;span style=&#34;color:#75715e&#34;&gt;//declare the task
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;gulp&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;task&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;sass&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#66d9ef&#34;&gt;function&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;done&lt;/span&gt;) {
+    &lt;span style=&#34;color:#a6e22e&#34;&gt;gulp&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;src&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./scss/ionic.app.scss&amp;#39;&lt;/span&gt;)
+    .&lt;span style=&#34;color:#a6e22e&#34;&gt;pipe&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;sass&lt;/span&gt;())
+    .&lt;span style=&#34;color:#a6e22e&#34;&gt;pipe&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;gulp&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;dest&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./www/css/&amp;#39;&lt;/span&gt;))
+    .&lt;span style=&#34;color:#a6e22e&#34;&gt;pipe&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;minifyCss&lt;/span&gt;({
+        &lt;span style=&#34;color:#a6e22e&#34;&gt;keepSpecialComments&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;
+    }))
+    .&lt;span style=&#34;color:#a6e22e&#34;&gt;pipe&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;rename&lt;/span&gt;({ &lt;span style=&#34;color:#a6e22e&#34;&gt;extname&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;.min.css&amp;#39;&lt;/span&gt; }))
+    .&lt;span style=&#34;color:#a6e22e&#34;&gt;pipe&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;gulp&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;dest&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;./www/css/&amp;#39;&lt;/span&gt;))
+    .&lt;span style=&#34;color:#a6e22e&#34;&gt;on&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;end&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;done&lt;/span&gt;);
+});
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;One thing that is immediately noticed here, is the lack of any up-front configuration, especially, specifying a source and destination. It is clear how one processor plugs into another. Just like LEGO bricks, plugins fit right into each other. The magic happens because of the object format that plugins exchange, the so called &lt;a href=&#34;https://github.com/wearefractal/vinyl&#34;&gt;Vinyl&lt;/a&gt;. Vinyl is just an abstraction that describes a virtual file object — one that could refer to an existing file on the FS, a stream, or simply dead-ends with a null.&lt;/p&gt;
+
+&lt;p&gt;The use of streams is also a part of how gulp plugins are developed. In unison with the UNIX philosophy, gulp plugins must &lt;a href=&#34;https://github.com/gulpjs/gulp/blob/master/docs/writing-a-plugin/guidelines.md&#34;&gt;&lt;strong&gt;try to do one thing well&lt;/strong&gt;&lt;/a&gt;. In simple words, if your plugin tries to do way too many things, better split it into several smaller plugins, and try to use as many readily developed plugins as you can. Let the complexity reside within the task orchestration, not the plugin body.&lt;/p&gt;
+
+&lt;p&gt;Both Grunt and Gulp have their own specifics when developing extensions. Both will make you sacrifice a bit of the beauty of your code, for the sake of plugging it into each build system. Truth is though that Gulp plugins feel one idea less coupled than their Grunt counterparts. This is because every Gulp plugin is first and foremost a legit node.js streaming module. With a bit of fitting, it can be re-used in other pieces of streaming node.js code.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://preslav.me/content/images/2019/02/image.png&#34; alt=&#34;&#34; /&gt;&lt;a href=&#34;https://twitter.com/maxogden/status/421375617733386242&#34;&gt;@maxodgen | Twitter&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;One word of advice though is to try not to fit every piece of your code into a Gulp plugin. As this &lt;a href=&#34;http://blog.overzealous.com/post/74121048393/why-you-shouldnt-create-a-gulp-plugin-or-how-to&#34;&gt;article points out&lt;/a&gt;, thinking of your code as a Gulp plugin would inevitably increase configuration, which is counter to what the Gulp guidelines, and the &lt;strong&gt;do one thing well&lt;/strong&gt; philosophy suggest. This is where the &lt;strong&gt;code over configuration&lt;/strong&gt; principle shines. Unlike Grunt, Gulp makes it extremely easy to fit other code within a task definition, besides streaming from one plugin to another. In fact, a Gulp task may not even contain a streaming pipeline:&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4&#34;&gt;&lt;code class=&#34;language-javascript&#34; data-lang=&#34;javascript&#34;&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;var&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;http&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;require&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;http&amp;#39;&lt;/span&gt;);
+    
+&lt;span style=&#34;color:#75715e&#34;&gt;//declare the task
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;gulp&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;task&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;server&amp;#39;&lt;/span&gt;, &lt;span style=&#34;color:#66d9ef&#34;&gt;function&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;done&lt;/span&gt;) {
+    &lt;span style=&#34;color:#75715e&#34;&gt;//start an http server (I know, a totally useless example, but helps to illustrate the point)
+&lt;/span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;&lt;/span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;var&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;requestListener&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;function&lt;/span&gt; (&lt;span style=&#34;color:#a6e22e&#34;&gt;req&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;res&lt;/span&gt;) {
+    &lt;span style=&#34;color:#a6e22e&#34;&gt;res&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;writeHead&lt;/span&gt;(&lt;span style=&#34;color:#ae81ff&#34;&gt;200&lt;/span&gt;);
+    &lt;span style=&#34;color:#a6e22e&#34;&gt;res&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;end&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#39;Hello, World!n&amp;#39;&lt;/span&gt;);
+    }
+    
+    &lt;span style=&#34;color:#66d9ef&#34;&gt;var&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;server&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;http&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;createServer&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;requestListener&lt;/span&gt;);
+    &lt;span style=&#34;color:#a6e22e&#34;&gt;server&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;listen&lt;/span&gt;(&lt;span style=&#34;color:#ae81ff&#34;&gt;8080&lt;/span&gt;);
+    
+    &lt;span style=&#34;color:#a6e22e&#34;&gt;done&lt;/span&gt;();
+});
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h1 id=&#34;the-verdict&#34;&gt;The Verdict&lt;/h1&gt;
+
+&lt;p&gt;Has Gulp made Grunt obsolete. &lt;a href=&#34;http://qr.ae/6rv0g&#34;&gt;&lt;em&gt;No, for the same reason that Burger King didn&amp;rsquo;t make McDonald&amp;rsquo;s obsolete&lt;/em&gt;&lt;/a&gt;. Truth is, if you&amp;rsquo;re starting to work with JS-based build systems, there is a high chance that you&amp;rsquo;d pick Gulp right away. The prospects for it just seem a little rosier, plus, it has been adopted by a large portion of projects. Yet, if you are still using Grunt and feel comfortable using it, there is nothing to be worried about — the community is still there, bigger than Gulp, and keeps growing. Grunt has almost a couple of years of advantage, and I am sure that large project maintainers will try to stick to it for as long as possible. Another advantage of using Grunt is if all you need is that little built-in set of simple tasks. In that case, you&amp;rsquo;d feel right at home with it, and Gulp, despite all of its flexibility, will make you spend more time in theory than you need. As with everything else project related, you should choose based on the circumstances.&lt;/p&gt;
+
+&lt;h1 id=&#34;resources&#34;&gt;Resources&lt;/h1&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;http://benalman.com/news/2012/08/why-grunt/&#34;&gt;Why grunt? Why not something else?&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://markdalgleish.github.io/presentation-build-wars-gulp-vs-grunt&#34;&gt;Build Wars: Gulp vs Grunt&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://medium.com/p/3828e8126466&#34;&gt;gulp - Eric Schoffstall - Medium&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;http://www.100percentjs.com/just-like-grunt-gulp-browserify-now/&#34;&gt;自家用車の新車について&lt;/a&gt;
+and others&amp;hellip;&lt;/li&gt;
+&lt;/ul&gt;
+></content:encoded>
+      
+      <media:content url="https://preslav.me/images/2015/january/gulp-vs-grunt-header.jpeg" medium="image"/>
+      
+    </item>
+    
+  </channel>
+</rss>

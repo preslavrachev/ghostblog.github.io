@@ -1,4 +1,5 @@
 User-agent: *
-Sitemap: https://preslav.me/sitemap.xml
-Disallow: /ghost/
-Disallow: /p/
+# robotstxt.org - if ENV production variable is false robots will be disallowed.
+
+  Disallow:
+
